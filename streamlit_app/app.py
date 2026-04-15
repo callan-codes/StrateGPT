@@ -111,7 +111,7 @@ with st.sidebar:
         "Quiz Me":          "quiz_msgs",
     }[mode]
 
-    if st.button("🗑 Clear conversation", use_container_width=True):
+    if st.button("🗑 Clear conversation", width="stretch"):
         st.session_state[session_key] = []
         st.rerun()
 

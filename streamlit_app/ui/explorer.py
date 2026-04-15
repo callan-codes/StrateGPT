@@ -98,7 +98,7 @@ def render_explorer(index: list, doc_texts: dict):
 
     st.dataframe(
         filtered[display_cols],
-        use_container_width=True,
+        width="stretch",
         hide_index=True,
         height=460,
         column_config={

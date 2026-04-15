@@ -60,7 +60,7 @@ def render_synthesis(index: list, doc_texts: dict, skills: str, client):
         selected_areas = st.multiselect(
             "Areas",
             options=all_areas,
-            default=["K-12 Education", "Postsecondary Success"],
+            default=[a for a in all_areas if a in ("K-12 Education", "Postsecondary Success")][:2],
             label_visibility="collapsed",
         )
 
@@ -76,7 +76,7 @@ def render_synthesis(index: list, doc_texts: dict, skills: str, client):
             "✨ Synthesize",
             type="primary",
             disabled=not (len(selected_areas) >= 2 and question.strip()),
-            use_container_width=True,
+            width="stretch",
         )
         if len(selected_areas) < 2:
             st.caption("Select at least two strategy areas to synthesize.")
@@ -84,7 +84,7 @@ def render_synthesis(index: list, doc_texts: dict, skills: str, client):
         st.markdown("---")
         st.markdown("**Sample questions:**")
         for sample in SAMPLE_QUESTIONS:
-            if st.button(sample, key=f"s_{sample[:24]}", use_container_width=True):
+            if st.button(sample, key=f"s_{sample[:24]}", width="stretch"):
                 # Store in session state so it populates on next rerun
                 st.session_state["synth_prefill"] = sample
                 st.rerun()
