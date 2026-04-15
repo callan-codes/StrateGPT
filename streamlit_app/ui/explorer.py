@@ -87,10 +87,11 @@ def render_explorer(index: list, doc_texts: dict):
         ]
 
     # ── Stats row ─────────────────────────────────────────────────────────────
+    amb_col = "Amb'45"
     c1, c2, c3 = st.columns(3)
-    c1.metric("Showing",      f"{len(filtered)} docs")
+    c1.metric("Showing",        f"{len(filtered)} docs")
     c2.metric("With full text", f"{(filtered['Has Text'] == '✓').sum()}")
-    c3.metric("Amb'45 docs",   f"{(filtered[\"Amb'45\"] == '✓').sum()}")
+    c3.metric("Amb'45 docs",    f"{(filtered[amb_col] == '✓').sum()}")
 
     # ── Table ─────────────────────────────────────────────────────────────────
     display_cols = ["Topic", "Year", "Type", "Strategy Areas", "Has Text", "Amb'45"]
