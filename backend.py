@@ -1,4 +1,5 @@
 import json, re, os
+from urllib.parse import quote
 from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -35,9 +36,11 @@ def to_url(path: str) -> str:
     """Return a SharePoint URL when deployed, or a local file:// URL for dev."""
     p = path.replace("\\", "/")
     if SP_DOCS_BASE and p.startswith(LOCAL_DOCS_BASE):
-        return SP_DOCS_BASE + p[len(LOCAL_DOCS_BASE):]
+        rel = p[len(LOCAL_DOCS_BASE):]
+        return SP_DOCS_BASE.rstrip("/") + "/" + quote(rel, safe="/")
     if SP_AMB45_BASE and p.startswith(LOCAL_AMB45_BASE):
-        return SP_AMB45_BASE + p[len(LOCAL_AMB45_BASE):]
+        rel = p[len(LOCAL_AMB45_BASE):]
+        return SP_AMB45_BASE.rstrip("/") + "/" + quote(rel, safe="/")
     return "file:///" + p  # local dev fallback
 
 # ── Load index ────────────────────────────────────────────────────────────────

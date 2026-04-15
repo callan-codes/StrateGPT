@@ -48,8 +48,16 @@
       align-items: center;
       justify-content: space-between;
       flex-shrink: 0;
+      position: sticky; top: 0; z-index: 100;
       box-shadow: 0 2px 8px rgba(0,0,0,0.2);
     }
+    .sidebar-toggle {
+      background: rgba(255,255,255,0.1); border: none; color: white;
+      width: 32px; height: 32px; border-radius: 7px; cursor: pointer;
+      font-size: 14px; display: flex; align-items: center; justify-content: center;
+      transition: background 0.15s; margin-left: 8px;
+    }
+    .sidebar-toggle:hover { background: rgba(255,255,255,0.2); }
     .header-left { display: flex; align-items: center; gap: 14px; }
     .logo-mark {
       width: 36px; height: 36px;
@@ -82,7 +90,10 @@
       flex-direction: column;
       flex-shrink: 0;
       overflow-y: auto;
+      overflow-x: hidden;
+      transition: width 0.25s ease, border 0.25s ease;
     }
+    .sidebar.collapsed { width: 0; border-right: none; }
     .sidebar-section { padding: 20px 16px 8px; }
     .sidebar-label {
       font-size: 10px; font-weight: 700; letter-spacing: 0.8px;
@@ -101,14 +112,11 @@
       margin-bottom: 4px;
     }
     .mode-btn:hover { background: var(--gray-100); color: var(--gray-800); }
-    .mode-btn.active {
-      background: var(--amber-light);
-      color: var(--blue-dark);
-      font-weight: 600;
-      border-left: 3px solid var(--amber);
-      padding-left: 11px;
-    }
+    .mode-btn.active          { font-weight: 600; border-left: 3px solid transparent; padding-left: 11px; }
     .mode-btn.active .mode-icon { opacity: 1; }
+    .mode-btn.active-history  { background: var(--teal-light);  color: #1A7A6E; border-left-color: var(--teal); }
+    .mode-btn.active-ambition { background: #EDE5FF; color: #5B21B6; border-left-color: #7C3AED; }
+    .mode-btn.active-quiz     { background: #DCF5E4; color: #1A6B35; border-left-color: #16A34A; }
     .mode-icon {
       font-size: 18px; width: 24px; text-align: center;
       opacity: 0.6; flex-shrink: 0;
@@ -274,6 +282,7 @@
       text-align: center;
       flex-shrink: 0;
       letter-spacing: 0.1px;
+      position: sticky; top: 60px; z-index: 99;
     }
 
     /* Quiz elements */
@@ -414,7 +423,18 @@ const DOC_ICONS = {
 
 // ── Components ─────────────────────────────────────────────────────────────
 
+const LOADING_PHASES = [
+  "Searching 584 documents…",
+  "Retrieving relevant sources…",
+  "Generating response…",
+];
+
 function TypingIndicator() {
+  const [phase, setPhase] = useState(0);
+  useEffect(() => {
+    const t = setInterval(() => setPhase(p => Math.min(p + 1, LOADING_PHASES.length - 1)), 2500);
+    return () => clearInterval(t);
+  }, []);
   return (
     <div className="msg-row">
       <div className="avatar avatar-ai">🤖</div>
@@ -423,6 +443,7 @@ function TypingIndicator() {
           <div className="typing-dot" />
           <div className="typing-dot" />
           <div className="typing-dot" />
+          <span style={{fontSize: 12, color: "var(--gray-400)", marginLeft: 8}}>{LOADING_PHASES[phase]}</span>
         </div>
       </div>
     </div>
@@ -442,7 +463,7 @@ function SourceCards({ sources }) {
           const display = label.length > 44 ? label.slice(0, 42) + "…" : label;
           const fileUrl = s.url || null;
           return fileUrl ? (
-            <a key={i} className="source-card" href={fileUrl} target="_blank" rel="noreferrer" title={s.filename}>
+            <a key={i} className="source-card" href={fileUrl} target="_blank" rel="noreferrer" title={fileUrl}>
               <span className="source-icon">{icon}</span>
               <span>{display}{year}</span>
             </a>
@@ -522,7 +543,7 @@ function renderContent(text) {
   }).filter(Boolean);
 }
 
-function Message({ msg }) {
+function Message({ msg, onRetry }) {
   if (msg.role === "user") {
     return (
       <div className="msg-row user">
@@ -536,6 +557,23 @@ function Message({ msg }) {
       <div className="msg-row">
         <div className="avatar avatar-ai">🤖</div>
         <QuizBubble data={msg} />
+      </div>
+    );
+  }
+  if (msg.isError) {
+    return (
+      <div className="msg-row">
+        <div className="avatar avatar-ai">🤖</div>
+        <div className="bubble bubble-ai" style={{background: "#FFF8F8", borderLeft: "3px solid #E57373"}}>
+          <p style={{color: "var(--gray-600)"}}>{msg.content}</p>
+          {onRetry && msg.originalMessage && (
+            <button onClick={() => onRetry(msg.originalMessage)}
+              style={{marginTop: 10, padding: "6px 14px", background: "var(--teal)", color: "white",
+                border: "none", borderRadius: 7, cursor: "pointer", fontSize: 13, fontFamily: "inherit"}}>
+              ↺ Try again
+            </button>
+          )}
+        </div>
       </div>
     );
   }
@@ -575,6 +613,7 @@ function WelcomeCard({ mode, onStarter }) {
 
 function App() {
   const [modeId, setModeId] = useState("history");
+  const [sidebarOpen, setSidebarOpen] = useState(true);
   const [histories, setHistories] = useState({ history: [], ambition: [], quiz: [] });
   const [input, setInput] = useState("");
   const [typing, setTyping] = useState(false);
@@ -629,7 +668,9 @@ function App() {
     } catch (err) {
       const aiMsg = {
         role: "ai",
-        content: `⚠️ Could not reach the StrateGPT backend. Make sure the server is running:\n\n**python backend.py**\n\nError: ${err.message}`,
+        isError: true,
+        originalMessage: msg,
+        content: "Something went wrong — please try your question again. If the issue persists, the service may be temporarily unavailable.",
         sources: [],
       };
       setHistories((h) => ({ ...h, [modeId]: [...h[modeId], aiMsg] }));
@@ -665,7 +706,12 @@ function App() {
             <div className="app-subtitle">U.S. Program Strategy Assistant</div>
           </div>
         </div>
-        <div className="header-badge">Gates Foundation · Internal</div>
+        <div style={{display:"flex", alignItems:"center", gap:8}}>
+          <div className="header-badge">Gates Foundation · Internal</div>
+          <button className="sidebar-toggle" onClick={() => setSidebarOpen(o => !o)} title="Toggle sidebar">
+            {sidebarOpen ? "◀" : "▶"}
+          </button>
+        </div>
       </header>
 
       <div className="disclaimer">
@@ -674,13 +720,13 @@ function App() {
 
       <div className="app-body">
         {/* Sidebar */}
-        <aside className="sidebar">
+        <aside className={`sidebar${sidebarOpen ? "" : " collapsed"}`}>
           <div className="sidebar-section">
             <div className="sidebar-label">Mode</div>
             {MODES.map((m) => (
               <button
                 key={m.id}
-                className={`mode-btn ${modeId === m.id ? "active" : ""}`}
+                className={`mode-btn ${modeId === m.id ? `active active-${m.id}` : ""}`}
                 onClick={() => switchMode(m.id)}
               >
                 <span className="mode-icon">{m.icon}</span>
@@ -735,7 +781,7 @@ function App() {
               <WelcomeCard mode={mode} onStarter={sendMessage} />
             )}
             {messages.map((msg, i) => (
-              <Message key={i} msg={msg} />
+              <Message key={i} msg={msg} onRetry={sendMessage} />
             ))}
             {typing && <TypingIndicator />}
             <div ref={messagesEndRef} />
