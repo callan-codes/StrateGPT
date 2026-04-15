@@ -296,21 +296,22 @@
     .source-card { text-decoration: none; }
     .source-icon { font-size: 13px; }
 
-    /* Status bar */
+    /* Status bar — always in layout to avoid displacement; hidden when online */
     .status-bar {
       display: flex; align-items: center; justify-content: center; gap: 8px;
-      padding: 7px 24px; font-size: 12px; flex-shrink: 0;
-      transition: background 0.4s;
+      padding: 0 24px; font-size: 12px; flex-shrink: 0;
+      height: 0; overflow: hidden;
+      transition: height 0.3s ease, background 0.4s;
     }
-    .status-bar.checking  { background: var(--gray-200); color: var(--gray-600); }
-    .status-bar.waking    { background: #FFF3CD; color: #7a5500; border-bottom: 1px solid #f0c800; }
-    .status-bar.online    { background: #D4F5EF; color: #1A7A6E; }
+    .status-bar.checking,
+    .status-bar.waking { height: 34px; }
+    .status-bar.checking { background: var(--gray-200); color: var(--gray-600); }
+    .status-bar.waking   { background: #FFF3CD; color: #7a5500; border-bottom: 1px solid #f0c800; }
     .status-dot {
       width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
     }
-    .checking .status-dot  { background: var(--gray-400); }
-    .waking   .status-dot  { background: var(--amber); animation: pulse-dot 1.2s infinite; }
-    .online   .status-dot  { background: #3AC9B1; }
+    .status-bar.checking .status-dot { background: var(--gray-400); }
+    .status-bar.waking   .status-dot { background: var(--amber); animation: pulse-dot 1.2s infinite; }
     @keyframes pulse-dot {
       0%, 100% { opacity: 1; transform: scale(1); }
       50%       { opacity: 0.4; transform: scale(0.8); }
@@ -326,7 +327,6 @@
       text-align: center;
       flex-shrink: 0;
       letter-spacing: 0.1px;
-      position: sticky; top: 92px; z-index: 99;
     }
 
     /* Quiz elements */
@@ -781,13 +781,17 @@ function App() {
         <div className="header-badge">Gates Foundation · Internal</div>
       </header>
 
-      {backendStatus !== "online" && (
-        <div className={`status-bar ${backendStatus}`}>
-          <span className="status-dot" />
-          {backendStatus === "checking" && "Connecting to StrateGPT…"}
-          {backendStatus === "waking"   && "Server is waking up — this may take up to 30 seconds. Thank you for your patience!"}
-        </div>
-      )}
+      <div className={`status-bar ${backendStatus}`}>
+        {backendStatus !== "online" && (
+          <>
+            <span className="status-dot" />
+            <span>
+              {backendStatus === "checking" && "Connecting to StrateGPT…"}
+              {backendStatus === "waking"   && "Server is starting up — this may take about 30 seconds. Thank you for your patience!"}
+            </span>
+          </>
+        )}
+      </div>
 
       <div className="disclaimer">
         ⚠️ Responses generated with assistance from AI tools. Content should be reviewed by a human for accuracy. <strong>Internal use only.</strong>
