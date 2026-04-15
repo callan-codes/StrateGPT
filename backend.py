@@ -32,15 +32,24 @@ SP_AMB45_BASE = os.environ.get("SP_AMB45_BASE", "")  # e.g. https://bmgf.sharepo
 LOCAL_DOCS_BASE  = "C:/Users/callanco/OneDrive - Gates Foundation/Insight - Strategy Documents/"
 LOCAL_AMB45_BASE = "C:/Users/callanco/OneDrive - Gates Foundation/US Program - Ambition 2045 - shared materials/"
 
+def _sp_url(base: str, rel: str) -> str:
+    """Build a SharePoint Online deep-link URL that works for authenticated users."""
+    # /:w:/r/ format opens .docx in Word Online; /:x:/r/ for Excel; /:b:/r/ for PDF
+    ext = rel.rsplit(".", 1)[-1].lower() if "." in rel else ""
+    prefix = {"docx": ":w:", "xlsx": ":x:", "xls": ":x:", "pdf": ":b:", "pptx": ":p:"}.get(ext, ":r:")
+    site_root = "/".join(base.rstrip("/").split("/")[:5])  # https://tenant/sites/SiteName
+    lib_path  = "/" + "/".join(base.rstrip("/").split("/")[5:])  # /LibraryName
+    return f"{site_root}/{prefix}/r{lib_path}/{quote(rel, safe='/')}"
+
 def to_url(path: str) -> str:
     """Return a SharePoint URL when deployed, or a local file:// URL for dev."""
     p = path.replace("\\", "/")
     if SP_DOCS_BASE and p.startswith(LOCAL_DOCS_BASE):
         rel = p[len(LOCAL_DOCS_BASE):]
-        return SP_DOCS_BASE.rstrip("/") + "/" + quote(rel, safe="/")
+        return _sp_url(SP_DOCS_BASE, rel)
     if SP_AMB45_BASE and p.startswith(LOCAL_AMB45_BASE):
         rel = p[len(LOCAL_AMB45_BASE):]
-        return SP_AMB45_BASE.rstrip("/") + "/" + quote(rel, safe="/")
+        return _sp_url(SP_AMB45_BASE, rel)
     return "file:///" + p  # local dev fallback
 
 # ── Load index ────────────────────────────────────────────────────────────────
