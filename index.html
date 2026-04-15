@@ -296,6 +296,26 @@
     .source-card { text-decoration: none; }
     .source-icon { font-size: 13px; }
 
+    /* Status bar */
+    .status-bar {
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      padding: 7px 24px; font-size: 12px; flex-shrink: 0;
+      transition: background 0.4s;
+    }
+    .status-bar.checking  { background: var(--gray-200); color: var(--gray-600); }
+    .status-bar.waking    { background: #FFF3CD; color: #7a5500; border-bottom: 1px solid #f0c800; }
+    .status-bar.online    { background: #D4F5EF; color: #1A7A6E; }
+    .status-dot {
+      width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+    }
+    .checking .status-dot  { background: var(--gray-400); }
+    .waking   .status-dot  { background: var(--amber); animation: pulse-dot 1.2s infinite; }
+    .online   .status-dot  { background: #3AC9B1; }
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50%       { opacity: 0.4; transform: scale(0.8); }
+    }
+
     /* Disclaimer banner */
     .disclaimer {
       background: var(--amber-light);
@@ -306,7 +326,7 @@
       text-align: center;
       flex-shrink: 0;
       letter-spacing: 0.1px;
-      position: sticky; top: 60px; z-index: 99;
+      position: sticky; top: 92px; z-index: 99;
     }
 
     /* Quiz elements */
@@ -641,6 +661,26 @@ function App() {
   const [histories, setHistories] = useState({ history: [], ambition: [], quiz: [] });
   const [input, setInput] = useState("");
   const [typing, setTyping] = useState(false);
+  const [backendStatus, setBackendStatus] = useState("checking"); // checking | waking | online
+
+  // Poll /health on load until the backend is up
+  useEffect(() => {
+    let cancelled = false;
+    let attempts = 0;
+    const check = async () => {
+      if (cancelled) return;
+      try {
+        const r = await fetch(`${API_BASE}/health`, { signal: AbortSignal.timeout(5000) });
+        if (r.ok) { setBackendStatus("online"); return; }
+      } catch {}
+      if (cancelled) return;
+      attempts++;
+      setBackendStatus(attempts >= 2 ? "waking" : "checking");
+      setTimeout(check, 4000);
+    };
+    check();
+    return () => { cancelled = true; };
+  }, []);
   const messagesEndRef = useRef(null);
   const textareaRef = useRef(null);
 
@@ -674,27 +714,35 @@ function App() {
     setHistories((h) => ({ ...h, [modeId]: [...h[modeId], userMsg] }));
     setTyping(true);
 
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 90000);
     try {
       const backendMode = modeId === "ambition" ? "amb45" : modeId;
       const resp = await fetch(`${API_BASE}/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        signal: controller.signal,
         body: JSON.stringify({
           message: msg,
           mode:    backendMode,
           history: messages.map((m) => ({ role: m.role, content: m.content || "" })),
         }),
       });
+      clearTimeout(timeoutId);
       if (!resp.ok) throw new Error(`Server responded ${resp.status}`);
       const data = await resp.json();
       const aiMsg = { role: "ai", content: data.response, sources: data.sources };
       setHistories((h) => ({ ...h, [modeId]: [...h[modeId], aiMsg] }));
     } catch (err) {
+      clearTimeout(timeoutId);
+      const timedOut = err.name === "AbortError";
       const aiMsg = {
         role: "ai",
         isError: true,
         originalMessage: msg,
-        content: "Something went wrong — please try your question again. If the issue persists, the service may be temporarily unavailable.",
+        content: timedOut
+          ? "The request timed out — the server may still be waking up. Please wait a moment and try again."
+          : "Something went wrong — please try your question again. If the issue persists, the service may be temporarily unavailable.",
         sources: [],
       };
       setHistories((h) => ({ ...h, [modeId]: [...h[modeId], aiMsg] }));
@@ -732,6 +780,14 @@ function App() {
         </div>
         <div className="header-badge">Gates Foundation · Internal</div>
       </header>
+
+      {backendStatus !== "online" && (
+        <div className={`status-bar ${backendStatus}`}>
+          <span className="status-dot" />
+          {backendStatus === "checking" && "Connecting to StrateGPT…"}
+          {backendStatus === "waking"   && "Server is waking up — this may take up to 30 seconds. Thank you for your patience!"}
+        </div>
+      )}
 
       <div className="disclaimer">
         ⚠️ Responses generated with assistance from AI tools. Content should be reviewed by a human for accuracy. <strong>Internal use only.</strong>
@@ -825,7 +881,7 @@ function App() {
               <button
                 className="send-btn"
                 onClick={() => sendMessage()}
-                disabled={!input.trim() || typing}
+                disabled={!input.trim() || typing || backendStatus !== "online"}
               >
                 ↑
               </button>
