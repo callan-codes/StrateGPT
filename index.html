@@ -61,7 +61,7 @@
     .header-left { display: flex; align-items: center; gap: 14px; }
     .logo-mark {
       width: 36px; height: 36px;
-      background: var(--teal);
+      background: var(--amber);
       border-radius: 8px;
       display: flex; align-items: center; justify-content: center;
       font-weight: 700; font-size: 20px; color: white; letter-spacing: -0.5px;
@@ -114,9 +114,9 @@
     .mode-btn:hover { background: var(--gray-100); color: var(--gray-800); }
     .mode-btn.active          { font-weight: 600; border-left: 3px solid transparent; padding-left: 11px; }
     .mode-btn.active .mode-icon { opacity: 1; }
-    .mode-btn.active-history  { background: var(--teal-light);  color: #1A7A6E; border-left-color: var(--teal); }
-    .mode-btn.active-ambition { background: #EDE5FF; color: #5B21B6; border-left-color: #7C3AED; }
-    .mode-btn.active-quiz     { background: #DCF5E4; color: #1A6B35; border-left-color: #16A34A; }
+    .mode-btn.active-history  { background: #DCEFFE; color: #1155A6; border-left-color: #248af9; }
+    .mode-btn.active-ambition { background: #FADDEE; color: #7B1150; border-left-color: #d83397; }
+    .mode-btn.active-quiz     { background: #D4F5EF; color: #1A7A6E; border-left-color: #3ac9b1; }
     .mode-icon {
       font-size: 18px; width: 24px; text-align: center;
       opacity: 0.6; flex-shrink: 0;
@@ -163,14 +163,38 @@
     /* Mode banner */
     .mode-banner {
       padding: 14px 24px;
-      border-bottom: 1px solid var(--gray-200);
+      border-bottom: 2px solid var(--gray-200);
       background: var(--white);
       display: flex; align-items: center; gap: 12px;
       flex-shrink: 0;
     }
+    .mode-banner.mode-history  { background: #EFF7FF; border-bottom-color: #248af9; }
+    .mode-banner.mode-ambition { background: #FFF0F7; border-bottom-color: #d83397; }
+    .mode-banner.mode-quiz     { background: #F0FDFB; border-bottom-color: #3ac9b1; }
     .mode-banner-icon { font-size: 22px; }
     .mode-banner-title { font-size: 15px; font-weight: 600; color: var(--gray-800); }
     .mode-banner-desc  { font-size: 12px; color: var(--gray-400); }
+
+    /* Sidebar toggle */
+    .sidebar-toggle-row {
+      display: flex; justify-content: flex-end;
+      padding: 10px 12px 0;
+    }
+    .sidebar-toggle {
+      background: var(--gray-100); border: 1px solid var(--gray-200); color: var(--gray-600);
+      width: 28px; height: 28px; border-radius: 6px; cursor: pointer;
+      font-size: 11px; display: flex; align-items: center; justify-content: center;
+      transition: background 0.15s;
+    }
+    .sidebar-toggle:hover { background: var(--gray-200); }
+    .sidebar-expand {
+      position: fixed; left: 0; top: 50%; transform: translateY(-50%);
+      background: var(--blue-dark); color: white;
+      width: 18px; height: 48px; border: none; border-radius: 0 6px 6px 0;
+      cursor: pointer; font-size: 10px; z-index: 50;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .sidebar-expand:hover { background: var(--blue); }
 
     /* Messages */
     .messages {
@@ -227,7 +251,7 @@
       display: flex; align-items: center; justify-content: center;
       font-size: 14px; font-weight: 700; flex-shrink: 0;
     }
-    .avatar-ai   { background: var(--teal); color: white; font-size: 18px; }
+    .avatar-ai   { background: var(--amber); color: white; font-size: 18px; }
     .avatar-user { background: var(--gray-200); color: var(--gray-600); font-size: 11px; }
 
     .bubble {
@@ -706,12 +730,7 @@ function App() {
             <div className="app-subtitle">U.S. Program Strategy Assistant</div>
           </div>
         </div>
-        <div style={{display:"flex", alignItems:"center", gap:8}}>
-          <div className="header-badge">Gates Foundation · Internal</div>
-          <button className="sidebar-toggle" onClick={() => setSidebarOpen(o => !o)} title="Toggle sidebar">
-            {sidebarOpen ? "◀" : "▶"}
-          </button>
-        </div>
+        <div className="header-badge">Gates Foundation · Internal</div>
       </header>
 
       <div className="disclaimer">
@@ -720,7 +739,13 @@ function App() {
 
       <div className="app-body">
         {/* Sidebar */}
+        {!sidebarOpen && (
+          <button className="sidebar-expand" onClick={() => setSidebarOpen(true)} title="Open sidebar">▶</button>
+        )}
         <aside className={`sidebar${sidebarOpen ? "" : " collapsed"}`}>
+          <div className="sidebar-toggle-row">
+            <button className="sidebar-toggle" onClick={() => setSidebarOpen(o => !o)} title="Collapse sidebar">◀</button>
+          </div>
           <div className="sidebar-section">
             <div className="sidebar-label">Mode</div>
             {MODES.map((m) => (
@@ -768,7 +793,7 @@ function App() {
 
         {/* Chat */}
         <main className="chat-area">
-          <div className="mode-banner">
+          <div className={`mode-banner mode-${modeId}`}>
             <span className="mode-banner-icon">{mode.icon}</span>
             <div>
               <div className="mode-banner-title">{mode.label}</div>
