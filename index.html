@@ -1,0 +1,773 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>StrateGPT — U.S. Program Strategy Assistant</title>
+  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      /* Gates Foundation brand palette */
+      --blue:       #313A44;   /* Gates Dark Charcoal – buttons, send */
+      --blue-dark:  #1D2530;   /* Deeper charcoal – header, user bubbles */
+      --blue-light: #FAFAE8;   /* Warm off-white – hover/active tints */
+      --teal:       #3AC9B1;   /* Gates Teal – logo, AI avatar, accents */
+      --teal-light: #D4F5EF;   /* Light teal – doc pill, teal tags */
+      --amber:      #EBCB00;   /* Gates Gold – active borders, amber tags */
+      --amber-light:#FBF5CC;   /* Light gold – active backgrounds, disclaimer */
+      --gray-100:   #F5F5F5;
+      --gray-200:   #E8E8E8;
+      --gray-400:   #ABABAB;
+      --gray-600:   #595959;
+      --gray-800:   #2E2E2E;
+      --white:      #FFFFFF;
+      --radius:     10px;
+      --shadow:     0 2px 12px rgba(0,0,0,0.08);
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--gray-100);
+      color: var(--gray-800);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── Header ── */
+    header {
+      background: var(--blue-dark);
+      color: var(--white);
+      padding: 0 28px;
+      height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
+    .header-left { display: flex; align-items: center; gap: 14px; }
+    .logo-mark {
+      width: 36px; height: 36px;
+      background: var(--teal);
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: 20px; color: white; letter-spacing: -0.5px;
+    }
+    .app-title { font-size: 18px; font-weight: 600; letter-spacing: -0.3px; }
+    .app-subtitle { font-size: 12px; opacity: 0.65; margin-top: 1px; }
+    .header-badge {
+      font-size: 11px; background: rgba(255,255,255,0.12);
+      border-radius: 20px; padding: 4px 12px;
+      letter-spacing: 0.3px;
+    }
+
+    /* ── Layout ── */
+    .app-body {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    /* ── Sidebar ── */
+    .sidebar {
+      width: 260px;
+      background: var(--white);
+      border-right: 1px solid var(--gray-200);
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+      overflow-y: auto;
+    }
+    .sidebar-section { padding: 20px 16px 8px; }
+    .sidebar-label {
+      font-size: 10px; font-weight: 700; letter-spacing: 0.8px;
+      text-transform: uppercase; color: var(--gray-400);
+      margin-bottom: 10px;
+    }
+
+    .mode-btn {
+      width: 100%; text-align: left;
+      padding: 11px 14px;
+      border: none; background: none; cursor: pointer;
+      border-radius: var(--radius);
+      display: flex; align-items: center; gap: 12px;
+      font-size: 14px; color: var(--gray-600);
+      transition: background 0.15s, color 0.15s;
+      margin-bottom: 4px;
+    }
+    .mode-btn:hover { background: var(--gray-100); color: var(--gray-800); }
+    .mode-btn.active {
+      background: var(--amber-light);
+      color: var(--blue-dark);
+      font-weight: 600;
+      border-left: 3px solid var(--amber);
+      padding-left: 11px;
+    }
+    .mode-btn.active .mode-icon { opacity: 1; }
+    .mode-icon {
+      font-size: 18px; width: 24px; text-align: center;
+      opacity: 0.6; flex-shrink: 0;
+    }
+    .mode-text { line-height: 1.3; }
+    .mode-text small { display: block; font-size: 11px; font-weight: 400; opacity: 0.7; margin-top: 1px; }
+
+    .sidebar-divider { border: none; border-top: 1px solid var(--gray-200); margin: 8px 16px; }
+
+    .doc-count-pill {
+      display: flex; align-items: center; gap: 8px;
+      padding: 10px 14px;
+      background: var(--amber-light);
+      border-radius: var(--radius);
+      margin: 0 16px 12px;
+      font-size: 12px; color: #7a6200;
+      border: 1px solid #e0c800;
+    }
+    .doc-count-pill strong { font-size: 20px; font-weight: 700; line-height: 1; }
+
+    .strategy-tag {
+      display: inline-flex; align-items: center;
+      font-size: 11px; padding: 3px 9px;
+      border-radius: 20px; margin: 3px 2px;
+      cursor: default;
+    }
+    .tag-teal    { background: #D4F5EF; color: #1A7A6E; }
+    .tag-blue    { background: #DCEFFE; color: #1155A6; }
+    .tag-green   { background: #DCF5E4; color: #1A6B35; }
+    .tag-charcoal{ background: #E8EAEC; color: #313A44; }
+    .tag-magenta { background: #FADDEE; color: #8C1A5A; }
+    .tag-purple  { background: #EDE5FF; color: #5B21B6; }
+    .tag-gold    { background: var(--amber-light); color: #7a6200; }
+
+    /* ── Main chat area ── */
+    .chat-area {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      min-width: 0;
+    }
+
+    /* Mode banner */
+    .mode-banner {
+      padding: 14px 24px;
+      border-bottom: 1px solid var(--gray-200);
+      background: var(--white);
+      display: flex; align-items: center; gap: 12px;
+      flex-shrink: 0;
+    }
+    .mode-banner-icon { font-size: 22px; }
+    .mode-banner-title { font-size: 15px; font-weight: 600; color: var(--gray-800); }
+    .mode-banner-desc  { font-size: 12px; color: var(--gray-400); }
+
+    /* Messages */
+    .messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    /* Welcome card */
+    .welcome-card {
+      background: var(--white);
+      border-radius: var(--radius);
+      padding: 28px;
+      box-shadow: var(--shadow);
+      max-width: 640px;
+    }
+    .welcome-card h2 { font-size: 18px; color: var(--blue-dark); margin-bottom: 8px; }
+    .welcome-card p  { font-size: 14px; color: var(--gray-600); line-height: 1.6; margin-bottom: 16px; }
+
+    .starter-grid {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 10px; margin-top: 4px;
+    }
+    .starter-btn {
+      background: var(--gray-100);
+      border: 1px solid var(--gray-200);
+      border-radius: 8px;
+      padding: 12px 14px;
+      text-align: left; cursor: pointer;
+      font-size: 13px; color: var(--gray-600);
+      line-height: 1.4;
+      transition: background 0.15s, border-color 0.15s, color 0.15s;
+    }
+    .starter-btn:hover {
+      background: var(--teal-light);
+      border-color: var(--teal);
+      color: var(--blue-dark);
+    }
+
+    /* Message bubbles */
+    .msg-row {
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+      max-width: 820px;
+    }
+    .msg-row.user { flex-direction: row-reverse; align-self: flex-end; }
+
+    .avatar {
+      width: 34px; height: 34px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px; font-weight: 700; flex-shrink: 0;
+    }
+    .avatar-ai   { background: var(--teal); color: white; font-size: 18px; }
+    .avatar-user { background: var(--gray-200); color: var(--gray-600); font-size: 11px; }
+
+    .bubble {
+      padding: 13px 16px;
+      border-radius: 12px;
+      font-size: 14px; line-height: 1.6;
+      max-width: 620px;
+    }
+    .bubble-ai {
+      background: var(--white);
+      box-shadow: var(--shadow);
+      color: var(--gray-800);
+      border-top-left-radius: 3px;
+    }
+    .bubble-user {
+      background: var(--blue-dark);
+      color: white;
+      border-top-right-radius: 3px;
+    }
+    .bubble p + p { margin-top: 10px; }
+    .bubble strong { font-weight: 600; }
+
+    /* Source docs */
+    .sources {
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px solid var(--gray-200);
+    }
+    .sources-label { font-size: 11px; font-weight: 600; color: var(--gray-400); letter-spacing: 0.4px; text-transform: uppercase; margin-bottom: 8px; }
+    .source-cards  { display: flex; gap: 8px; flex-wrap: wrap; }
+    .source-card {
+      background: var(--gray-100);
+      border: 1px solid var(--gray-200);
+      border-radius: 7px;
+      padding: 7px 11px;
+      font-size: 12px; color: var(--gray-600);
+      display: flex; align-items: center; gap: 6px;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .source-card:hover { background: var(--teal-light); color: var(--blue-dark); border-color: var(--teal); }
+    .source-card { text-decoration: none; }
+    .source-icon { font-size: 13px; }
+
+    /* Disclaimer banner */
+    .disclaimer {
+      background: var(--amber-light);
+      border-bottom: 1px solid #d4a800;
+      padding: 6px 24px;
+      font-size: 11px;
+      color: #7a5500;
+      text-align: center;
+      flex-shrink: 0;
+      letter-spacing: 0.1px;
+    }
+
+    /* Quiz elements */
+    .quiz-options { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
+    .quiz-option {
+      padding: 11px 14px;
+      background: var(--gray-100);
+      border: 1.5px solid var(--gray-200);
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 14px; color: var(--gray-600);
+      transition: all 0.15s;
+    }
+    .quiz-option:hover { background: var(--teal-light); border-color: var(--teal); color: var(--blue-dark); }
+    .quiz-option.correct { background: var(--teal-light); border-color: var(--teal); color: #00736e; }
+    .quiz-option.incorrect { background: #fde8e8; border-color: #d94f4f; color: #9b2c2c; }
+
+    /* Typing indicator */
+    .typing { display: flex; align-items: center; gap: 5px; padding: 14px 16px; }
+    .typing-dot {
+      width: 7px; height: 7px; border-radius: 50%;
+      background: var(--blue);
+      animation: bounce 1.2s infinite ease-in-out;
+    }
+    .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+    .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes bounce {
+      0%, 80%, 100% { transform: translateY(0); opacity: 0.4; }
+      40% { transform: translateY(-6px); opacity: 1; }
+    }
+
+    /* Input bar */
+    .input-bar {
+      padding: 16px 24px;
+      background: var(--white);
+      border-top: 1px solid var(--gray-200);
+      display: flex; gap: 10px; align-items: flex-end;
+      flex-shrink: 0;
+    }
+    .input-wrapper {
+      flex: 1;
+      background: var(--gray-100);
+      border: 1.5px solid var(--gray-200);
+      border-radius: 12px;
+      display: flex; align-items: flex-end;
+      padding: 4px 4px 4px 14px;
+      transition: border-color 0.15s;
+    }
+    .input-wrapper:focus-within { border-color: var(--teal); background: var(--white); }
+    textarea {
+      flex: 1; border: none; background: none; outline: none; resize: none;
+      font-size: 14px; line-height: 1.5; color: var(--gray-800);
+      font-family: inherit;
+      padding: 8px 0;
+      max-height: 140px;
+      min-height: 40px;
+    }
+    textarea::placeholder { color: var(--gray-400); }
+    .send-btn {
+      width: 38px; height: 38px; border-radius: 9px;
+      background: var(--blue); border: none; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      color: white; font-size: 16px; flex-shrink: 0;
+      transition: background 0.15s;
+    }
+    .send-btn:hover { background: var(--blue-dark); }
+    .send-btn:disabled { background: var(--gray-200); cursor: not-allowed; }
+
+    .input-hint {
+      font-size: 11px; color: var(--gray-400);
+      text-align: center; margin-top: 6px;
+    }
+  </style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+const { useState, useRef, useEffect } = React;
+
+// ── Config ─────────────────────────────────────────────────────────────────
+// Relative URLs when deployed on Azure; localhost when opening file directly
+const API_BASE = window.location.origin === "null" ? "http://localhost:8000" : "";
+
+const MODES = [
+  {
+    id: "history",
+    icon: "📚",
+    label: "Strategy History",
+    short: "Explore past strategies",
+    banner: "Ask questions about U.S. Program strategies across time",
+    placeholder: "e.g. How has the Postsecondary Success strategy evolved since 2019?",
+    starters: [
+      "How has the Postsecondary Success strategy evolved since 2019?",
+      "What were the key shifts in the K-12 Education strategy in 2022?",
+      "Summarize the USP Data Strategy from 2020 to today.",
+      "What did the 2021 Pathways Strategy Review conclude?",
+    ],
+  },
+  {
+    id: "ambition",
+    icon: "🔭",
+    label: "Ambition 2045",
+    short: "Connect past to future",
+    banner: "Understand how Ambition 2045 connects to historical strategy",
+    placeholder: "e.g. How does Amb'45's college access goal build on earlier Postsecondary work?",
+    starters: [
+      "How does Amb'45 build on prior Postsecondary Success strategies?",
+      "Where does Amb'45 represent a strategic shift vs. continuity?",
+      "What past K-12 investments lay groundwork for Amb'45?",
+      "How does Amb'45 reflect learnings from the Math Pathways work?",
+    ],
+  },
+  {
+    id: "quiz",
+    icon: "🧠",
+    label: "Quiz Me",
+    short: "Test your knowledge",
+    banner: "Test your knowledge of U.S. Program strategy",
+    placeholder: "Type a topic to be quizzed on, or press Start Quiz…",
+    starters: [
+      "Quiz me on Postsecondary Success strategy",
+      "Quiz me on K-12 Education key priorities",
+      "Quiz me on the USP Data Strategy",
+      "Quiz me on Math Pathways evolution",
+    ],
+  },
+];
+
+// ── Doc type icons ──────────────────────────────────────────────────────────
+const DOC_ICONS = {
+  "memo": "📄", "cover-note": "📄", "email": "📧",
+  "presentation": "📊", "investment-scoring": "📊", "spreadsheet": "📊",
+  "meeting-notes": "📝", "follow-ups": "📝",
+  "investment-narrative": "📋", "investment-plan": "📋", "pre-read": "📖",
+  "digital-binder": "📁", "placemat": "📌", "video": "🎥",
+};
+
+// ── Components ─────────────────────────────────────────────────────────────
+
+function TypingIndicator() {
+  return (
+    <div className="msg-row">
+      <div className="avatar avatar-ai">🤖</div>
+      <div className="bubble bubble-ai">
+        <div className="typing">
+          <div className="typing-dot" />
+          <div className="typing-dot" />
+          <div className="typing-dot" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function SourceCards({ sources }) {
+  if (!sources || sources.length === 0) return null;
+  return (
+    <div className="sources">
+      <div className="sources-label">Sources</div>
+      <div className="source-cards">
+        {sources.map((s, i) => {
+          const icon    = DOC_ICONS[s.doc_type] || "📄";
+          const label   = s.topic || s.filename;
+          const year    = s.year ? ` (${s.year})` : "";
+          const display = label.length > 44 ? label.slice(0, 42) + "…" : label;
+          const fileUrl = s.url || null;
+          return fileUrl ? (
+            <a key={i} className="source-card" href={fileUrl} target="_blank" rel="noreferrer" title={s.filename}>
+              <span className="source-icon">{icon}</span>
+              <span>{display}{year}</span>
+            </a>
+          ) : (
+            <div key={i} className="source-card" title={s.filename}>
+              <span className="source-icon">{icon}</span>
+              <span>{display}{year}</span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function QuizBubble({ data }) {
+  const [selected, setSelected] = useState(null);
+
+  return (
+    <div className="bubble bubble-ai">
+      <strong>Question:</strong>
+      <p style={{ marginTop: 8 }}>{data.question}</p>
+      <div className="quiz-options">
+        {data.options.map((opt) => {
+          let cls = "quiz-option";
+          if (selected) {
+            if (opt.id === data.correct) cls += " correct";
+            else if (opt.id === selected) cls += " incorrect";
+          }
+          return (
+            <button
+              key={opt.id}
+              className={cls}
+              onClick={() => !selected && setSelected(opt.id)}
+              disabled={!!selected}
+            >
+              <strong>{opt.id.toUpperCase()}.</strong> {opt.text}
+            </button>
+          );
+        })}
+      </div>
+      {selected && (
+        <p style={{ marginTop: 12, fontSize: 13, color: selected === data.correct ? "#00736e" : "#9b2c2c", lineHeight: 1.5 }}>
+          {selected === data.correct ? "✓ Correct! " : "✗ Not quite. "}
+          {data.explanation}
+        </p>
+      )}
+    </div>
+  );
+}
+
+function bold(text) {
+  return text.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>");
+}
+
+function renderContent(text) {
+  return text.split("\n").map((line, i) => {
+    // Skip horizontal rules
+    if (/^-{3,}$/.test(line.trim())) return null;
+    // Empty line → small spacer
+    if (!line.trim()) return <div key={i} style={{height: "6px"}} />;
+    // Heading (## or ###) → bold paragraph
+    const heading = line.match(/^#{1,3}\s+(.+)/);
+    if (heading) return (
+      <p key={i} style={{marginTop: "10px"}}>
+        <strong dangerouslySetInnerHTML={{__html: bold(heading[1])}} />
+      </p>
+    );
+    // Bullet point
+    const bullet = line.match(/^(\s*)[-*]\s+(.+)/);
+    if (bullet) return (
+      <p key={i} style={{paddingLeft: "14px"}}
+        dangerouslySetInnerHTML={{__html: "• " + bold(bullet[2])}} />
+    );
+    // Normal line
+    return <p key={i} dangerouslySetInnerHTML={{__html: bold(line)}} />;
+  }).filter(Boolean);
+}
+
+function Message({ msg }) {
+  if (msg.role === "user") {
+    return (
+      <div className="msg-row user">
+        <div className="avatar avatar-user">YN</div>
+        <div className="bubble bubble-user">{msg.content}</div>
+      </div>
+    );
+  }
+  if (msg.isQuiz) {
+    return (
+      <div className="msg-row">
+        <div className="avatar avatar-ai">🤖</div>
+        <QuizBubble data={msg} />
+      </div>
+    );
+  }
+  return (
+    <div className="msg-row">
+      <div className="avatar avatar-ai">🤖</div>
+      <div className="bubble bubble-ai">
+        {renderContent(msg.content)}
+        <SourceCards sources={msg.sources} />
+      </div>
+    </div>
+  );
+}
+
+function WelcomeCard({ mode, onStarter }) {
+  return (
+    <div className="welcome-card">
+      <h2>{mode.icon} {mode.label}</h2>
+      <p>
+        {mode.id === "history" && "Ask any question about U.S. Program strategies from 2019 to present. The knowledge base includes strategy updates, co-chair reviews, deep dives, and learning sessions across K-12, Postsecondary, Pathways, Data, and more."}
+        {mode.id === "ambition" && "Explore how Ambition 2045 connects to — and departs from — the historical arc of U.S. Program strategy. Amb'45 materials are included alongside all historical USP strategy documents."}
+        {mode.id === "quiz" && "Test your knowledge of U.S. Program strategy. Choose a topic below or type your own, and StrateGPT will generate questions drawn from the strategy documents."}
+      </p>
+      <p style={{ fontSize: 12, color: "var(--gray-400)" }}>Try a sample question to get started:</p>
+      <div className="starter-grid">
+        {mode.starters.map((s, i) => (
+          <button key={i} className="starter-btn" onClick={() => onStarter(s)}>
+            "{s}"
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ── App ────────────────────────────────────────────────────────────────────
+
+function App() {
+  const [modeId, setModeId] = useState("history");
+  const [histories, setHistories] = useState({ history: [], ambition: [], quiz: [] });
+  const [input, setInput] = useState("");
+  const [typing, setTyping] = useState(false);
+  const messagesEndRef = useRef(null);
+  const textareaRef = useRef(null);
+
+  const mode = MODES.find((m) => m.id === modeId);
+  const messages = histories[modeId];
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [histories, typing]);
+
+  function autoResize() {
+    const ta = textareaRef.current;
+    if (!ta) return;
+    ta.style.height = "auto";
+    ta.style.height = Math.min(ta.scrollHeight, 140) + "px";
+  }
+
+  function switchMode(id) {
+    setModeId(id);
+    setInput("");
+    if (textareaRef.current) textareaRef.current.style.height = "auto";
+  }
+
+  async function sendMessage(text) {
+    const msg = text || input.trim();
+    if (!msg) return;
+    setInput("");
+    if (textareaRef.current) textareaRef.current.style.height = "auto";
+
+    const userMsg = { role: "user", content: msg };
+    setHistories((h) => ({ ...h, [modeId]: [...h[modeId], userMsg] }));
+    setTyping(true);
+
+    try {
+      const backendMode = modeId === "ambition" ? "amb45" : modeId;
+      const resp = await fetch(`${API_BASE}/chat`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          message: msg,
+          mode:    backendMode,
+          history: messages.map((m) => ({ role: m.role, content: m.content || "" })),
+        }),
+      });
+      if (!resp.ok) throw new Error(`Server responded ${resp.status}`);
+      const data = await resp.json();
+      const aiMsg = { role: "ai", content: data.response, sources: data.sources };
+      setHistories((h) => ({ ...h, [modeId]: [...h[modeId], aiMsg] }));
+    } catch (err) {
+      const aiMsg = {
+        role: "ai",
+        content: `⚠️ Could not reach the StrateGPT backend. Make sure the server is running:\n\n**python backend.py**\n\nError: ${err.message}`,
+        sources: [],
+      };
+      setHistories((h) => ({ ...h, [modeId]: [...h[modeId], aiMsg] }));
+    } finally {
+      setTyping(false);
+    }
+  }
+
+  function handleKeyDown(e) {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage();
+    }
+  }
+
+  const tags = [
+    { label: "K-12 Education",   cls: "tag-teal"     },
+    { label: "Postsecondary",    cls: "tag-blue"     },
+    { label: "Pathways",         cls: "tag-green"    },
+    { label: "Data",             cls: "tag-charcoal" },
+    { label: "Charters",         cls: "tag-magenta"  },
+    { label: "Washington State", cls: "tag-purple"   },
+    { label: "Amb'45",           cls: "tag-gold"     },
+  ];
+
+  return (
+    <>
+      <header>
+        <div className="header-left">
+          <div className="logo-mark">🤖</div>
+          <div>
+            <div className="app-title">StrateGPT</div>
+            <div className="app-subtitle">U.S. Program Strategy Assistant</div>
+          </div>
+        </div>
+        <div className="header-badge">Gates Foundation · Internal</div>
+      </header>
+
+      <div className="disclaimer">
+        ⚠️ Responses generated with assistance from AI tools. Content should be reviewed by a human for accuracy. <strong>Internal use only.</strong>
+      </div>
+
+      <div className="app-body">
+        {/* Sidebar */}
+        <aside className="sidebar">
+          <div className="sidebar-section">
+            <div className="sidebar-label">Mode</div>
+            {MODES.map((m) => (
+              <button
+                key={m.id}
+                className={`mode-btn ${modeId === m.id ? "active" : ""}`}
+                onClick={() => switchMode(m.id)}
+              >
+                <span className="mode-icon">{m.icon}</span>
+                <span className="mode-text">
+                  {m.label}
+                  <small>{m.short}</small>
+                </span>
+              </button>
+            ))}
+          </div>
+
+          <hr className="sidebar-divider" />
+
+          <div className="sidebar-section">
+            <div className="sidebar-label">Knowledge Base</div>
+          </div>
+          <a
+            href={window.location.origin === "null"
+              ? encodeURI("file:///C:/Users/callanco/OneDrive - Gates Foundation/Insight - Strategy Documents/")
+              : (typeof SP_DOCS_BASE !== "undefined" && SP_DOCS_BASE) || "#"}
+            target="_blank"
+            rel="noreferrer"
+            style={{ textDecoration: "none" }}
+          >
+            <div className="doc-count-pill" style={{ cursor: "pointer" }}>
+              <div>
+                <strong>584</strong>
+                <div style={{ fontSize: 11 }}>USP strategy docs · 2019–2026 ↗</div>
+              </div>
+            </div>
+          </a>
+          <div style={{ padding: "0 16px 16px" }}>
+            {tags.map((t, i) => (
+              <span key={i} className={`strategy-tag ${t.cls}`}>{t.label}</span>
+            ))}
+          </div>
+
+        </aside>
+
+        {/* Chat */}
+        <main className="chat-area">
+          <div className="mode-banner">
+            <span className="mode-banner-icon">{mode.icon}</span>
+            <div>
+              <div className="mode-banner-title">{mode.label}</div>
+              <div className="mode-banner-desc">{mode.banner}</div>
+            </div>
+          </div>
+
+          <div className="messages">
+            {messages.length === 0 && (
+              <WelcomeCard mode={mode} onStarter={sendMessage} />
+            )}
+            {messages.map((msg, i) => (
+              <Message key={i} msg={msg} />
+            ))}
+            {typing && <TypingIndicator />}
+            <div ref={messagesEndRef} />
+          </div>
+
+          <div className="input-bar">
+            <div className="input-wrapper">
+              <textarea
+                ref={textareaRef}
+                value={input}
+                onChange={(e) => { setInput(e.target.value); autoResize(); }}
+                onKeyDown={handleKeyDown}
+                placeholder={mode.placeholder}
+                rows={1}
+              />
+              <button
+                className="send-btn"
+                onClick={() => sendMessage()}
+                disabled={!input.trim() || typing}
+              >
+                ↑
+              </button>
+            </div>
+          </div>
+          <div className="input-hint">Shift + Enter for new line · Enter to send</div>
+        </main>
+      </div>
+    </>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+</script>
+</body>
+</html>

@@ -1,0 +1,15 @@
+# Secret — never commit the API key
+.env
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Azure artifacts (not needed for Render)
+deploy.bat
+.webappignore
+
+# Local-only utility scripts (not needed to run the app)
+usp_strategy_docs.txt
