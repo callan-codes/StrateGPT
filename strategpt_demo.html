@@ -1,0 +1,809 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>StrateGPT — Demo</title>
+  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --blue:       #313A44;
+      --blue-dark:  #1D2530;
+      --blue-light: #FAFAE8;
+      --teal:       #3AC9B1;
+      --teal-light: #D4F5EF;
+      --amber:      #EBCB00;
+      --amber-light:#FBF5CC;
+      --gray-100:   #F5F5F5;
+      --gray-200:   #E8E8E8;
+      --gray-400:   #ABABAB;
+      --gray-600:   #595959;
+      --gray-800:   #2E2E2E;
+      --white:      #FFFFFF;
+      --radius:     10px;
+      --shadow:     0 2px 12px rgba(0,0,0,0.08);
+    }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--gray-100); color: var(--gray-800); height: 100vh; display: flex; flex-direction: column; }
+    header { background: var(--blue-dark); color: var(--white); padding: 0 28px; height: 60px; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
+    .header-left { display: flex; align-items: center; gap: 14px; }
+    .logo-mark { width: 36px; height: 36px; background: #248af9; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 20px; }
+    .app-title { font-size: 18px; font-weight: 600; letter-spacing: -0.3px; }
+    .app-subtitle { font-size: 12px; opacity: 0.65; margin-top: 1px; }
+    .header-right { display: flex; align-items: center; gap: 10px; }
+    .header-badge { font-size: 11px; background: rgba(255,255,255,0.12); border-radius: 20px; padding: 4px 12px; letter-spacing: 0.3px; }
+    .demo-badge { font-size: 11px; font-weight: 700; background: var(--amber); color: #5a4400; border-radius: 20px; padding: 4px 12px; letter-spacing: 0.5px; }
+    .app-body { display: flex; flex: 1; overflow: hidden; }
+    .sidebar { width: 260px; background: var(--white); border-right: 1px solid var(--gray-200); display: flex; flex-direction: column; flex-shrink: 0; overflow-y: auto; overflow-x: hidden; transition: width 0.25s ease, border 0.25s ease; }
+    .sidebar.collapsed { width: 0; border-right: none; }
+    .sidebar-toggle-row { display: flex; justify-content: flex-end; padding: 10px 12px 0; }
+    .sidebar-toggle { background: var(--gray-100); border: 1px solid var(--gray-200); color: var(--gray-600); width: 28px; height: 28px; border-radius: 6px; cursor: pointer; font-size: 11px; display: flex; align-items: center; justify-content: center; transition: background 0.15s; }
+    .sidebar-toggle:hover { background: var(--gray-200); }
+    .sidebar-expand { position: fixed; left: 0; top: 50%; transform: translateY(-50%); background: var(--blue-dark); color: white; width: 18px; height: 48px; border: none; border-radius: 0 6px 6px 0; cursor: pointer; font-size: 10px; z-index: 50; display: flex; align-items: center; justify-content: center; }
+    .sidebar-expand:hover { background: var(--blue); }
+    .sidebar-section { padding: 20px 16px 8px; }
+    .sidebar-label { font-size: 10px; font-weight: 700; letter-spacing: 0.8px; text-transform: uppercase; color: var(--gray-400); margin-bottom: 10px; }
+    .mode-btn { width: 100%; text-align: left; padding: 11px 14px; border: none; background: none; cursor: pointer; border-radius: var(--radius); display: flex; align-items: center; gap: 12px; font-size: 14px; color: var(--gray-600); transition: background 0.15s, color 0.15s; margin-bottom: 4px; }
+    .mode-btn:hover { background: var(--gray-100); color: var(--gray-800); }
+    .mode-btn.active { font-weight: 600; border-left: 3px solid transparent; padding-left: 11px; }
+    .mode-btn.active .mode-icon { opacity: 1; }
+    .mode-btn.active-history  { background: var(--amber-light); color: #7a6200; border-left-color: var(--amber); }
+    .mode-btn.active-ambition { background: #FADDEE; color: #7B1150; border-left-color: #d83397; }
+    .mode-btn.active-quiz     { background: #D4F5EF; color: #1A7A6E; border-left-color: #3ac9b1; }
+    .mode-icon { font-size: 18px; width: 24px; text-align: center; opacity: 0.6; flex-shrink: 0; }
+    .mode-text { line-height: 1.3; }
+    .mode-text small { display: block; font-size: 11px; font-weight: 400; opacity: 0.7; margin-top: 1px; }
+    .sidebar-divider { border: none; border-top: 1px solid var(--gray-200); margin: 8px 16px; }
+    .doc-count-pill { display: flex; align-items: center; gap: 8px; padding: 10px 14px; background: var(--amber-light); border-radius: var(--radius); margin: 0 16px 12px; font-size: 12px; color: #7a6200; border: 1px solid #e0c800; }
+    .doc-count-pill strong { font-size: 20px; font-weight: 700; line-height: 1; }
+    .strategy-tag { display: inline-flex; align-items: center; font-size: 11px; padding: 3px 9px; border-radius: 20px; margin: 3px 2px; cursor: default; }
+    .tag-teal    { background: #D4F5EF; color: #1A7A6E; }
+    .tag-blue    { background: #DCEFFE; color: #1155A6; }
+    .tag-green   { background: #DCF5E4; color: #1A6B35; }
+    .tag-charcoal{ background: #E8EAEC; color: #313A44; }
+    .tag-magenta { background: #FADDEE; color: #8C1A5A; }
+    .tag-purple  { background: #EDE5FF; color: #5B21B6; }
+    .tag-gold    { background: var(--amber-light); color: #7a6200; }
+    .chat-area { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
+    .mode-banner { padding: 14px 24px; border-bottom: 2px solid var(--gray-200); background: var(--white); display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
+    .mode-banner.mode-history  { background: var(--amber-light); border-bottom-color: var(--amber); }
+    .mode-banner.mode-ambition { background: #FFF0F7; border-bottom-color: #d83397; }
+    .mode-banner.mode-quiz     { background: #F0FDFB; border-bottom-color: #3ac9b1; }
+    .mode-banner-icon { font-size: 22px; }
+    .mode-banner-title { font-size: 15px; font-weight: 600; color: var(--gray-800); }
+    .mode-banner-desc  { font-size: 12px; color: var(--gray-400); }
+    .disclaimer { background: var(--amber-light); border-bottom: 1px solid #d4a800; padding: 6px 24px; font-size: 11px; color: #7a5500; text-align: center; flex-shrink: 0; letter-spacing: 0.1px; }
+    .messages { flex: 1; overflow-y: auto; padding: 24px; display: flex; flex-direction: column; gap: 20px; }
+    .welcome-card { background: var(--white); border-radius: var(--radius); padding: 28px; box-shadow: var(--shadow); max-width: 640px; }
+    .welcome-card h2 { font-size: 18px; color: var(--blue-dark); margin-bottom: 8px; }
+    .welcome-card p  { font-size: 14px; color: var(--gray-600); line-height: 1.6; margin-bottom: 16px; }
+    .demo-note { background: #FFF3CD; border: 1px solid #f0c800; border-radius: 8px; padding: 10px 14px; font-size: 12px; color: #7a5500; margin-bottom: 16px; line-height: 1.5; }
+    .starter-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 4px; }
+    .starter-btn { background: var(--gray-100); border: 1px solid var(--gray-200); border-radius: 8px; padding: 12px 14px; text-align: left; cursor: pointer; font-size: 13px; color: var(--gray-600); line-height: 1.4; transition: background 0.15s, border-color 0.15s, color 0.15s; }
+    .starter-btn:hover { background: var(--teal-light); border-color: var(--teal); color: var(--blue-dark); }
+    .msg-row { display: flex; gap: 12px; align-items: flex-start; max-width: 820px; }
+    .msg-row.user { flex-direction: row-reverse; align-self: flex-end; }
+    .avatar { width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700; flex-shrink: 0; }
+    .avatar-ai   { background: #248af9; color: white; font-size: 18px; }
+    .avatar-user { background: var(--gray-200); color: var(--gray-600); font-size: 11px; }
+    .bubble { padding: 13px 16px; border-radius: 12px; font-size: 14px; line-height: 1.6; max-width: 620px; }
+    .bubble-ai { background: var(--white); box-shadow: var(--shadow); color: var(--gray-800); border-top-left-radius: 3px; }
+    .bubble-user { background: var(--blue-dark); color: white; border-top-right-radius: 3px; }
+    .bubble p + p { margin-top: 10px; }
+    .bubble strong { font-weight: 600; }
+    .sources { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--gray-200); }
+    .sources-label { font-size: 11px; font-weight: 600; color: var(--gray-400); letter-spacing: 0.4px; text-transform: uppercase; margin-bottom: 8px; }
+    .source-cards { display: flex; gap: 8px; flex-wrap: wrap; }
+    .source-card { background: var(--gray-100); border: 1px solid var(--gray-200); border-radius: 7px; padding: 7px 11px; font-size: 12px; color: var(--gray-600); display: flex; align-items: center; gap: 6px; cursor: default; }
+    .source-icon { font-size: 13px; }
+    .typing { display: flex; align-items: center; gap: 5px; padding: 14px 16px; }
+    .typing-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--blue); animation: bounce 1.2s infinite ease-in-out; }
+    .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+    .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes bounce { 0%, 80%, 100% { transform: translateY(0); opacity: 0.4; } 40% { transform: translateY(-6px); opacity: 1; } }
+    .quiz-options { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
+    .quiz-option { padding: 11px 14px; background: var(--gray-100); border: 1.5px solid var(--gray-200); border-radius: 8px; cursor: pointer; font-size: 14px; color: var(--gray-600); transition: all 0.15s; text-align: left; font-family: inherit; width: 100%; }
+    .quiz-option:hover:not(:disabled) { background: var(--teal-light); border-color: var(--teal); color: var(--blue-dark); }
+    .quiz-option.correct   { background: var(--teal-light); border-color: var(--teal); color: #00736e; }
+    .quiz-option.incorrect { background: #fde8e8; border-color: #d94f4f; color: #9b2c2c; }
+    .input-bar { padding: 16px 24px; background: var(--white); border-top: 1px solid var(--gray-200); display: flex; gap: 10px; align-items: flex-end; flex-shrink: 0; }
+    .input-wrapper { flex: 1; background: var(--gray-100); border: 1.5px solid var(--gray-200); border-radius: 12px; display: flex; align-items: flex-end; padding: 4px 4px 4px 14px; transition: border-color 0.15s; }
+    .input-wrapper:focus-within { border-color: var(--teal); background: var(--white); }
+    textarea { flex: 1; border: none; background: none; outline: none; resize: none; font-size: 14px; line-height: 1.5; color: var(--gray-800); font-family: inherit; padding: 8px 0; max-height: 140px; min-height: 40px; }
+    textarea::placeholder { color: var(--gray-400); }
+    .send-btn { width: 38px; height: 38px; border-radius: 9px; background: var(--blue); border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; color: white; font-size: 16px; flex-shrink: 0; transition: background 0.15s; }
+    .send-btn:hover { background: var(--blue-dark); }
+    .send-btn:disabled { background: var(--gray-200); cursor: not-allowed; }
+    .input-hint { font-size: 11px; color: var(--gray-400); text-align: center; margin-top: 6px; }
+  </style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+const { useState, useRef, useEffect } = React;
+
+// ── Modes ────────────────────────────────────────────────────────────────────
+const MODES = [
+  {
+    id: "history",
+    icon: "📚",
+    label: "Strategy History",
+    short: "Explore past strategies",
+    banner: "Ask questions about U.S. Program strategies across time",
+    placeholder: "e.g. How has the Postsecondary Success strategy evolved since 2019?",
+    starters: [
+      "How has the Postsecondary Success strategy evolved since 2019?",
+      "What were the key shifts in the K-12 Education strategy?",
+      "What is the Pathways strategy and how has it evolved?",
+      "What is the USP Data Strategy?",
+    ],
+  },
+  {
+    id: "ambition",
+    icon: "🔭",
+    label: "Ambition 2045",
+    short: "Connect past to future",
+    banner: "Understand how Ambition 2045 connects to historical strategy",
+    placeholder: "e.g. How does Amb'45's college access goal build on earlier Postsecondary work?",
+    starters: [
+      "How does Amb'45 build on prior Postsecondary Success strategies?",
+      "Where does Amb'45 represent a strategic shift vs. continuity?",
+      "What past K-12 investments lay groundwork for Amb'45?",
+      "How does Amb'45 reflect learnings from the Math Pathways work?",
+    ],
+  },
+  {
+    id: "quiz",
+    icon: "🧠",
+    label: "Quiz Me",
+    short: "Test your knowledge",
+    banner: "Test your knowledge of U.S. Program strategy",
+    placeholder: "Type a topic to quiz on, or press a button below to start…",
+    starters: [
+      "Quiz me on Postsecondary Success strategy",
+      "Quiz me on K-12 Education and HQIM",
+      "Quiz me on the Pathways strategy",
+      "Quiz me on Ambition 2045",
+    ],
+  },
+];
+
+// ── Demo response bank ────────────────────────────────────────────────────────
+const FALLBACK = {
+  content: `This is a **demo version of StrateGPT** with pre-loaded responses for sample questions.\n\nFor full AI-powered Q&A across all 584 strategy documents, visit the live version at **strategpt.onrender.com**.\n\nIn the meantime, try one of the sample questions above — or rephrase your question using terms like "Postsecondary," "K-12," "Pathways," "Data Strategy," or "Ambition 2045."`,
+  sources: [],
+};
+
+const HISTORY_RESPONSES = [
+  {
+    keys: ["postsecondary", "ps strategy", "college", "completion", "higher ed", "equitable value", "credential", "degree", "community college"],
+    content: `**Evolution of the Postsecondary Success Strategy (2019–Present)**
+
+The Postsecondary Success (PS) strategy has undergone a fundamental reframing since 2019, shifting from a pure "completion agenda" to an **equitable value** framework.
+
+**Pre-2019: The Completion Agenda**
+The strategy was primarily focused on increasing the raw number of postsecondary completions, aligned to national campaigns like Complete College America and Lumina's Goal 2025. Evidence of equity impact was limited, and a growing critique emerged that completion alone was insufficient if credentials didn't deliver real economic value.
+
+**2019–2020: The Equitable Value Reframe**
+A major strategic pivot reframed the North Star: completion is insufficient if credentials don't deliver measurable economic and social value — especially for low-income students and students of color. The four-pillar model emerged: Institutional Transformation, Public Goods, National Scale Enterprises, and Federal & State Policy.
+
+**2020–2022: COVID Disruption and Workforce Alignment**
+Community college enrollment dropped sharply in 2020–2021, disproportionately affecting low-income students and students of color. The strategy pivoted partially to enrollment recovery. Simultaneously, emphasis on labor market alignment and "good jobs" deepened — with growing investment in earnings outcomes, stackable credentials, and apprenticeship.
+
+**2022–2025: Data Infrastructure and AI**
+The Postsecondary Data Partnership (PDP), managed by the National Student Clearinghouse, expanded to cover roughly one-third of all postsecondary enrollment — a major public goods achievement. AI-powered advising and personalized learning began emerging as new strategic levers.
+
+Key persistent investments include: corequisite remediation (replacing sequential developmental education), Guided Pathways institutional reform, and scaling of high-quality national providers like Western Governors University (WGU) and Southern New Hampshire University (SNHU).`,
+    sources: [
+      { filename: "2021 PS Co-Chair Review.docx", doc_type: "pre-read", year: 2021, topic: "Postsecondary Success Co-Chair Review", areas: ["Postsecondary Success"] },
+      { filename: "2022 Equitable Value Deep Dive.docx", doc_type: "meeting-notes", year: 2022, topic: "Equitable Value Framework Deep Dive", areas: ["Postsecondary Success"] },
+      { filename: "2023 PS Strategy Update.docx", doc_type: "presentation", year: 2023, topic: "Postsecondary Strategy Update", areas: ["Postsecondary Success"] },
+    ],
+  },
+  {
+    keys: ["k-12", "k12", "hqim", "instructional materials", "curriculum", "algebra", "math", "teacher", "reading", "literacy", "science of reading", "edreports"],
+    content: `**Evolution of the K-12 Education Strategy (2019–Present)**
+
+The K-12 strategy has gone through one of the most consequential pivots in USP history, followed by steady deepening and a new AI-era layer.
+
+**2013–2018: Teacher Effectiveness Era**
+The foundation invested heavily in teacher evaluation systems, value-added measures (VAM), and alternative certification pipelines. The flagship Intensive Partnerships for Effective Teaching initiative ($575M) showed minimal impacts on student achievement in a comprehensive RAND evaluation — setting the stage for a strategic reset.
+
+**2019: Pivot to High-Quality Instructional Materials (HQIM)**
+Following the Intensive Partnerships evaluation, the K-12 strategy pivoted decisively to curriculum as the primary lever. The central insight: even talented teachers cannot overcome weak curriculum — the materials in front of students every day matter enormously. HQIM adoption (as rated by EdReports) became the North Star metric.
+
+**2020–2022: Deepening and ELA Expansion**
+The HQIM strategy deepened, expanding from math into ELA. The Science of Reading movement — emphasizing explicit phonics and decoding instruction — gained significant policy traction and was integrated into the strategy. Algebra 1 was elevated as a gateway milestone: students who complete Algebra 1 by 9th grade have dramatically higher chances of postsecondary readiness.
+
+**2023–2025: AI Integration**
+The emergence of large language models opened new possibilities for AI tutoring. The K-12 strategy began integrating AI tutoring as an additional layer built on HQIM foundations — with investments in platforms like Khan Academy's Khanmigo and Carnegie Learning's AI-integrated curriculum.
+
+A persistent tension: the foundation's visible role in developing Common Core State Standards generated significant political backlash; the strategy has navigated carefully around the "Common Core" label while continuing to fund CCSS-aligned materials.`,
+    sources: [
+      { filename: "2019 K-12 Strategy Reset.docx", doc_type: "memo", year: 2019, topic: "K-12 Strategy Reset — HQIM Pivot", areas: ["K-12 Education"] },
+      { filename: "2022 HQIM Adoption Review.docx", doc_type: "meeting-notes", year: 2022, topic: "HQIM Adoption Review", areas: ["K-12 Education"] },
+      { filename: "2025 K-12 AI Integration Update.docx", doc_type: "presentation", year: 2025, topic: "K-12 AI Integration Update", areas: ["K-12 Education"] },
+    ],
+  },
+  {
+    keys: ["pathways", "dual enrollment", "early college", "cte", "career", "technical", "apprenticeship", "9th", "14th grade"],
+    content: `**The Pathways Strategy: Overview and Evolution**
+
+The Pathways strategy addresses the transition zone between secondary education, postsecondary education, and the workforce — a span the strategy frames as "9th through 14th grade" to emphasize continuity rather than treating high school and college as separate systems.
+
+**Strategic Intent**
+The strategy aims to create coherent, high-quality pathways that connect students — especially those from low-income backgrounds — to credentials and careers, without the dead ends and misalignment that characterize the current system. The key framing is "quality pathways": not just any pathway, but one that is academically rigorous, transparent, equitable, and connected to good jobs.
+
+**Core Sub-strategies**
+- **Dual Enrollment:** Supporting high school students taking college courses for credit, especially for first-generation students. Key barriers include course rigor, transportation, and counselor knowledge.
+- **Early College High Schools (ECHS):** Schools that allow students to earn up to two years of college credit during high school — a high-evidence model for increasing completion among low-income students.
+- **Career and Technical Education (CTE):** Supporting CTE programs that are genuinely industry-aligned, rigorous, and connected to PS credential pathways — moving beyond outdated "vocational ed" models.
+- **Navigational Support:** Funding advising, near-peer mentoring, and FAFSA completion support at the high school–college transition point.
+
+**Evolution**
+The strategy deepened its workforce alignment focus from 2021 onward, with growing attention to apprenticeship expansion in non-traditional sectors (healthcare, tech, business services). The Washington State Initiative (WSI) serves as a place-based laboratory for Pathways approaches.`,
+    sources: [
+      { filename: "2021 Pathways Strategy Review.docx", doc_type: "pre-read", year: 2021, topic: "Pathways Strategy Review", areas: ["Pathways"] },
+      { filename: "2023 Pathways Deep Dive.docx", doc_type: "presentation", year: 2023, topic: "Pathways Deep Dive Session", areas: ["Pathways"] },
+      { filename: "2022 Dual Enrollment Expansion Update.docx", doc_type: "meeting-notes", year: 2022, topic: "Dual Enrollment Expansion", areas: ["Pathways"] },
+    ],
+  },
+  {
+    keys: ["data strategy", "data", "pdp", "postsecondary data partnership", "data infrastructure", "clearinghouse", "texas"],
+    content: `**The USP Data Strategy**
+
+The USP Data Strategy is a cross-cutting investment in data infrastructure, measurement, and use across all USP strategy areas.
+
+**Postsecondary Data Partnership (PDP)**
+The flagship public goods investment is the Postsecondary Data Partnership, managed by the National Student Clearinghouse (NSC). PDP provides a shared platform for institutions to share and analyze student outcome data. By 2022, PDP covered approximately one-third of all postsecondary enrollment — a significant milestone for the field's ability to track student outcomes across institutions and over time.
+
+PDP's value is in enabling institutions to answer questions they previously couldn't: What share of our students complete a credential within six years? How do outcomes differ by race and income? Where do students transfer, and how do they fare afterward?
+
+**Texas Focus**
+Texas has been a particular focal state for USP Data work embedded in K-12 contexts, given the scale and policy environment of the Texas education system. Investments in longitudinal data systems in Texas support the ability to track students from K-12 through postsecondary and into the workforce.
+
+**Data as a Public Good**
+A central principle of the Data Strategy is that high-quality outcome data should be a public good available to all institutions and policymakers — not locked in proprietary systems. This drove investments in open data standards, shared infrastructure, and transparency mandates at the state level.
+
+**Connection to Other Strategy Areas**
+The Data Strategy underpins all other USP strategy areas: HQIM adoption in K-12 requires good data on what materials are being used and what outcomes they produce; equitable value in PS requires program-level earnings data by race and income; Pathways requires data linking K-12, PS, and workforce.`,
+    sources: [
+      { filename: "2020 USP Data Strategy Overview.docx", doc_type: "memo", year: 2020, topic: "USP Data Strategy Overview", areas: ["Data"] },
+      { filename: "2022 PDP Coverage Milestone Update.docx", doc_type: "meeting-notes", year: 2022, topic: "PDP Coverage Milestone", areas: ["Data", "Postsecondary Success"] },
+      { filename: "2023 Data Strategy Deep Dive.docx", doc_type: "pre-read", year: 2023, topic: "Data Strategy Deep Dive", areas: ["Data"] },
+    ],
+  },
+];
+
+const AMBITION_RESPONSES = [
+  {
+    keys: ["postsecondary", "college", "completion", "credential", "higher ed", "degree", "community college"],
+    content: `**Ambition 2045 and the Postsecondary Legacy**
+
+Ambition 2045 builds directly on the Postsecondary Success strategy's core insight: a postsecondary credential is the primary gateway to economic mobility, and that gateway must be both accessible and genuinely valuable.
+
+**Continuity: Equitable Value as Foundation**
+The equitable value framework — that credentials must deliver measurable economic and social value specifically for students from low-income backgrounds and students of color — sits at the heart of Amb'45's economic mobility priorities. The decade of investment in the Postsecondary Data Partnership (PDP) now provides the data infrastructure to actually measure whether Amb'45's goals are being achieved.
+
+**Continuity: Institutional Reform**
+The Guided Pathways work, corequisite remediation reform, and advising redesign investments from the PS strategy created the institutional change playbook that Amb'45 continues to leverage. Community colleges remain central to the Amb'45 strategy — they serve the largest share of first-generation and low-income students.
+
+**What Amb'45 Adds: Scale and Systems**
+Amb'45 raises ambition significantly — targeting systemic change at a level the PS strategy only partially achieved. Where the PS strategy often worked institution-by-institution, Amb'45 emphasizes state-level policy environments and national-scale models as the primary levers. Western Governors University and similar models become more central, not less.
+
+**What Amb'45 Changes: Workforce Integration**
+Amb'45 is more explicit than prior PS strategy about the integration of postsecondary and workforce development — treating the credential-to-career pipeline as a single system rather than two adjacent domains. The "good jobs" framing is more prominent than it was in early PS strategy.`,
+    sources: [
+      { filename: "Ambition 2045 Overview.pdf", doc_type: "pre-read", year: 2024, topic: "Ambition 2045 Overview", areas: ["Amb'45", "Postsecondary Success"] },
+      { filename: "2023 PS-Amb45 Strategic Linkages.docx", doc_type: "memo", year: 2023, topic: "PS–Amb'45 Strategic Linkages", areas: ["Postsecondary Success", "Amb'45"] },
+    ],
+  },
+  {
+    keys: ["shift", "change", "different", "new", "depart", "evolution", "pivot", "continuity", "contrast", "versus", "vs"],
+    content: `**Ambition 2045: Strategic Continuity vs. Genuine Departure**
+
+Amb'45 represents both deep continuity with USP's historical strategy and meaningful departures in ambition, framing, and theory of change.
+
+**Where Amb'45 Continues Prior Strategy**
+- The equity framework — that race and income should not predict educational outcomes — has been central to USP since at least 2019 and is fully carried into Amb'45.
+- HQIM, corequisite remediation, Guided Pathways, and equitable value all continue as live investments under Amb'45 — these are not abandoned, they are the foundation.
+- The community college and K-12 institutional focus remains. USP's deep relationships with CCRC, AACC, EdReports, and similar partners continue.
+
+**Where Amb'45 Represents a Departure**
+- **Time horizon:** Amb'45 extends the time horizon dramatically. Prior strategy worked in 3-5 year cycles; Amb'45 requires 20-year thinking about systems change.
+- **Demographic ambition:** Amb'45 explicitly targets 2045 as a demographic inflection point — when today's majority-minority generation of students will be the majority of the American workforce.
+- **Systems framing:** Where prior strategy often targeted specific leverage points (HQIM adoption, corequisite redesign), Amb'45 frames the challenge as full ecosystem transformation — K-12, PS, workforce, and policy alignment together.
+- **AI as a structural force:** Amb'45 treats AI not as a tool layer on top of existing strategy, but as a potential structural transformation of what teaching, learning, and credentialing can look like.
+- **Explicit economic mobility framing:** Prior strategy often used education outcome metrics as proxies; Amb'45 more directly names economic mobility — family-sustaining wages, wealth-building — as the ultimate goal.`,
+    sources: [
+      { filename: "Ambition 2045 Overview.pdf", doc_type: "pre-read", year: 2024, topic: "Ambition 2045 Overview", areas: ["Amb'45"] },
+      { filename: "2024 USP Strategic Direction Memo.docx", doc_type: "memo", year: 2024, topic: "USP Strategic Direction", areas: ["Amb'45"] },
+    ],
+  },
+  {
+    keys: ["k-12", "k12", "hqim", "instructional materials", "curriculum", "algebra", "reading", "literacy", "elementary", "secondary", "school"],
+    content: `**K-12 Investments as Groundwork for Ambition 2045**
+
+The K-12 strategy's investments from 2019–2025 lay direct groundwork for Amb'45's ambitions, primarily through two channels: ensuring more students arrive at the postsecondary transition academically prepared, and building the infrastructure and evidence base for what excellent instruction can look like.
+
+**HQIM as the Academic Preparation Engine**
+Amb'45's economic mobility goals depend on students completing postsecondary credentials with economic value. That pipeline starts with K-12 academic preparation. The decade of HQIM investment — putting high-quality math and ELA curriculum in front of millions of students, especially students of color — is the foundational academic preparation investment for Amb'45.
+
+**Algebra 1 as the Critical Gateway**
+The K-12 strategy's focus on Algebra 1 as a gateway milestone maps directly to Amb'45. Students who complete Algebra 1 successfully by 9th grade have dramatically higher rates of postsecondary enrollment and completion. Amb'45's economic mobility goals are significantly de-risked if more low-income students and students of color clear this milestone.
+
+**Science of Reading and Early Literacy**
+Amb'45 requires students who can read with fluency and comprehension — the foundation for all other learning. The K-12 strategy's investment in Science of Reading and evidence-based literacy instruction (2022–2025) builds the early foundation that Amb'45 requires.
+
+**AI Tutoring as an Amb'45 Amplifier**
+The K-12 strategy's emerging investments in AI tutoring (Khanmigo, Carnegie Learning) represent a potential step-change in instructional access. If AI tutoring can provide high-quality, individualized support at scale for students who currently lack access to effective tutoring, it could substantially accelerate the academic preparation pipeline that Amb'45 depends on.`,
+    sources: [
+      { filename: "Ambition 2045 Overview.pdf", doc_type: "pre-read", year: 2024, topic: "Ambition 2045 Overview", areas: ["Amb'45", "K-12 Education"] },
+      { filename: "2022 K-12 HQIM Deep Dive.docx", doc_type: "presentation", year: 2022, topic: "K-12 HQIM Deep Dive", areas: ["K-12 Education"] },
+      { filename: "2025 K-12 AI Integration Update.docx", doc_type: "presentation", year: 2025, topic: "K-12 AI Integration", areas: ["K-12 Education", "Amb'45"] },
+    ],
+  },
+  {
+    keys: ["math pathways", "math", "algebra", "stem", "numeracy", "mathematics"],
+    content: `**Math Pathways and Ambition 2045**
+
+The Math Pathways strategy — a sub-thread running through both K-12 and Postsecondary work — connects directly to Amb'45's goals in several important ways.
+
+**The Math Pathways Investment**
+Math Pathways refers to the strategic effort to redesign the mathematics sequence students move through from middle school through postsecondary — replacing a single-track calculus pipeline with multiple high-rigor pathways aligned to students' career goals. Key investments include:
+- Supporting non-calculus quantitative reasoning pathways for non-STEM students in college (so gateway math courses don't become completion barriers for students in nursing, business, etc.)
+- Ensuring STEM-bound students have strong Algebra 1 and precalculus preparation
+- Funding corequisite math redesign in community colleges
+
+**Learnings That Shaped Amb'45**
+Math Pathways work generated several key insights reflected in Amb'45:
+- **Sequence design matters enormously.** A student's entire postsecondary trajectory can be derailed by being placed in the wrong math course — or a course that doesn't connect to their goals.
+- **Equity requires active design.** Without intentional equity-centered design, math pathways can reproduce existing race and income gaps.
+- **Corequisite works.** The evidence that corequisite math redesign dramatically outperforms traditional developmental education became one of the clearest evidence-based findings in USP's history, informing Amb'45's institutional reform approach.
+
+**Amb'45 Continuation**
+Amb'45 continues to treat mathematics preparation as a critical equity lever, with Algebra 1 access and success as a leading indicator of the economic mobility outcomes the strategy targets.`,
+    sources: [
+      { filename: "2021 Math Pathways Learning Session.docx", doc_type: "meeting-notes", year: 2021, topic: "Math Pathways Learning Session", areas: ["K-12 Education", "Postsecondary Success", "Pathways"] },
+      { filename: "Ambition 2045 Overview.pdf", doc_type: "pre-read", year: 2024, topic: "Ambition 2045 Overview", areas: ["Amb'45"] },
+      { filename: "2023 Corequisite Math Evidence Review.docx", doc_type: "pre-read", year: 2023, topic: "Corequisite Math Evidence Review", areas: ["Postsecondary Success"] },
+    ],
+  },
+];
+
+// ── Quiz bank ─────────────────────────────────────────────────────────────────
+const QUIZ_BANK = [
+  {
+    question: "In 2019, the K-12 strategy made a major pivot away from which prior focus area?",
+    options: [
+      { id: "a", text: "High-Quality Instructional Materials (HQIM)" },
+      { id: "b", text: "Teacher effectiveness and value-added evaluation systems" },
+      { id: "c", text: "AI tutoring and adaptive learning platforms" },
+      { id: "d", text: "Dual enrollment and early college high schools" },
+    ],
+    correct: "b",
+    explanation: "The K-12 strategy pivoted away from teacher effectiveness (value-added measures, evaluation systems) toward High-Quality Instructional Materials. This followed a RAND evaluation of the $575M Intensive Partnerships initiative that showed minimal impacts on student achievement.",
+  },
+  {
+    question: "What does the term \"equitable value\" mean in the Postsecondary Success strategy?",
+    options: [
+      { id: "a", text: "Ensuring all postsecondary institutions charge the same tuition" },
+      { id: "b", text: "Credentials that deliver measurable economic and social value specifically for low-income students and students of color" },
+      { id: "c", text: "Equalizing the number of completions between two- and four-year institutions" },
+      { id: "d", text: "Providing equal federal funding to all types of postsecondary institutions" },
+    ],
+    correct: "b",
+    explanation: "Equitable value is the core reframe of the PS strategy introduced around 2019. It means that a postsecondary credential should deliver measurable economic and social value — jobs, earnings, career advancement — specifically for students from low-income backgrounds and students of color. Completion alone is not sufficient if the credential doesn't deliver value.",
+  },
+  {
+    question: "Which of the following best describes \"corequisite remediation\" as used in the PS strategy?",
+    options: [
+      { id: "a", text: "Students take non-credit developmental courses before being allowed to enroll in college-level work" },
+      { id: "b", text: "Students take two college-level gateway courses simultaneously for extra rigor" },
+      { id: "c", text: "Students enroll directly in college-level gateway courses while receiving concurrent academic support" },
+      { id: "d", text: "Students receive remediation support only after failing a gateway course" },
+    ],
+    correct: "c",
+    explanation: "Corequisite remediation allows students to enroll directly in college-level gateway courses while receiving concurrent (same-semester) academic support, rather than requiring them to first complete separate non-credit developmental courses. Evidence shows dramatically higher gateway course completion rates compared to the traditional sequential model.",
+  },
+  {
+    question: "The Postsecondary Data Partnership (PDP) is managed by which organization?",
+    options: [
+      { id: "a", text: "The Community College Research Center (CCRC) at Columbia University" },
+      { id: "b", text: "The National Student Clearinghouse (NSC)" },
+      { id: "c", text: "The American Association of Community Colleges (AACC)" },
+      { id: "d", text: "The Institute of Education Sciences (IES)" },
+    ],
+    correct: "b",
+    explanation: "The Postsecondary Data Partnership (PDP) is managed by the National Student Clearinghouse (NSC). By 2022, PDP covered approximately one-third of all postsecondary enrollment, enabling institutions to track and analyze student outcomes across institutions and over time.",
+  },
+  {
+    question: "According to the K-12 strategy, which course is described as the single most important \"gateway\" milestone in the K-12 pipeline?",
+    options: [
+      { id: "a", text: "AP US History" },
+      { id: "b", text: "8th grade reading proficiency" },
+      { id: "c", text: "Algebra 1" },
+      { id: "d", text: "Advanced Biology" },
+    ],
+    correct: "c",
+    explanation: "Algebra 1 is explicitly elevated as a gateway course in the K-12 strategy. Students who successfully complete Algebra 1 by 9th grade have dramatically higher rates of postsecondary readiness and completion. Failure in or being tracked out of Algebra 1 often forecloses postsecondary opportunity — making middle school math preparation a high-leverage intervention point.",
+  },
+  {
+    question: "The Pathways strategy frames its intervention zone as the \"9th-14th grade span.\" What does this mean?",
+    options: [
+      { id: "a", text: "The strategy focuses only on students in grades 9 through 12" },
+      { id: "b", text: "The strategy treats the span from 9th grade through two years of postsecondary as a continuous system, not two separate systems" },
+      { id: "c", text: "Students must complete a 14th grade certificate before entering the workforce" },
+      { id: "d", text: "The strategy targets students who are 9 to 14 years behind grade level" },
+    ],
+    correct: "b",
+    explanation: "The 9th–14th grade framing deliberately treats high school and the first two years of postsecondary as a single continuous system. This reframes the challenge: instead of managing a \"handoff\" between K-12 and PS, the Pathways strategy designs seamless pathways across the full span — through dual enrollment, early college high schools, and aligned CTE programs.",
+  },
+];
+
+// ── Doc icons ────────────────────────────────────────────────────────────────
+const DOC_ICONS = {
+  "memo": "📄", "cover-note": "📄", "email": "📧",
+  "presentation": "📊", "pre-read": "📖",
+  "meeting-notes": "📝", "follow-ups": "📝",
+};
+
+// ── Helpers ──────────────────────────────────────────────────────────────────
+function bold(text) {
+  return text.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>");
+}
+function renderContent(text) {
+  return text.split("\n").map((line, i) => {
+    if (/^-{3,}$/.test(line.trim())) return null;
+    if (!line.trim()) return <div key={i} style={{height: "6px"}} />;
+    const heading = line.match(/^#{1,3}\s+(.+)/);
+    if (heading) return <p key={i} style={{marginTop: "10px"}}><strong dangerouslySetInnerHTML={{__html: bold(heading[1])}} /></p>;
+    const bullet = line.match(/^(\s*)[-*]\s+(.+)/);
+    if (bullet) return <p key={i} style={{paddingLeft: "14px"}} dangerouslySetInnerHTML={{__html: "• " + bold(bullet[2])}} />;
+    return <p key={i} dangerouslySetInnerHTML={{__html: bold(line)}} />;
+  }).filter(Boolean);
+}
+
+function matchResponse(bank, text) {
+  const q = text.toLowerCase();
+  let best = null, bestScore = 0;
+  for (const r of bank) {
+    const score = r.keys.filter(k => q.includes(k)).length;
+    if (score > bestScore) { bestScore = score; best = r; }
+  }
+  return bestScore > 0 ? best : null;
+}
+
+// ── Quiz state machine ───────────────────────────────────────────────────────
+// Returns {type: "quiz", ...} messages handled by QuizBubble
+let quizIndex = { history: 0, ambition: 0, quiz: 0 };
+
+function getNextQuiz(modeId) {
+  const idx = quizIndex[modeId] % QUIZ_BANK.length;
+  quizIndex[modeId]++;
+  return { ...QUIZ_BANK[idx], isQuiz: true, role: "ai" };
+}
+
+function getDemoResponse(modeId, text) {
+  const q = text.toLowerCase();
+
+  if (modeId === "quiz") {
+    return getNextQuiz(modeId);
+  }
+
+  const bank = modeId === "history" ? HISTORY_RESPONSES : AMBITION_RESPONSES;
+  const match = matchResponse(bank, text);
+  if (match) {
+    return {
+      role: "ai",
+      content: match.content,
+      sources: match.sources.map(s => ({
+        ...s, url: null,
+      })),
+    };
+  }
+  return { role: "ai", ...FALLBACK };
+}
+
+// ── TypingIndicator ──────────────────────────────────────────────────────────
+function TypingIndicator() {
+  return (
+    <div className="msg-row">
+      <div className="avatar avatar-ai">🤖</div>
+      <div className="bubble bubble-ai">
+        <div className="typing">
+          <div className="typing-dot" /><div className="typing-dot" /><div className="typing-dot" />
+          <span style={{fontSize: 12, color: "var(--gray-400)", marginLeft: 8}}>Retrieving response…</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── SourceCards ──────────────────────────────────────────────────────────────
+function SourceCards({ sources }) {
+  if (!sources || sources.length === 0) return null;
+  return (
+    <div className="sources">
+      <div className="sources-label">Sources</div>
+      <div className="source-cards">
+        {sources.map((s, i) => {
+          const icon = DOC_ICONS[s.doc_type] || "📄";
+          const label = s.topic || s.filename;
+          const year = s.year ? ` (${s.year})` : "";
+          const display = label.length > 44 ? label.slice(0, 42) + "…" : label;
+          return (
+            <div key={i} className="source-card" title={s.filename}>
+              <span className="source-icon">{icon}</span>
+              <span>{display}{year}</span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ── QuizBubble ───────────────────────────────────────────────────────────────
+function QuizBubble({ data, onNext }) {
+  const [selected, setSelected] = useState(null);
+  return (
+    <div className="bubble bubble-ai">
+      <p><strong>Question:</strong></p>
+      <p style={{ marginTop: 8 }}>{data.question}</p>
+      <div className="quiz-options">
+        {data.options.map((opt) => {
+          let cls = "quiz-option";
+          if (selected) {
+            if (opt.id === data.correct) cls += " correct";
+            else if (opt.id === selected) cls += " incorrect";
+          }
+          return (
+            <button key={opt.id} className={cls}
+              onClick={() => !selected && setSelected(opt.id)}
+              disabled={!!selected}>
+              <strong>{opt.id.toUpperCase()}.</strong> {opt.text}
+            </button>
+          );
+        })}
+      </div>
+      {selected && (
+        <>
+          <p style={{ marginTop: 12, fontSize: 13, color: selected === data.correct ? "#00736e" : "#9b2c2c", lineHeight: 1.5 }}>
+            {selected === data.correct ? "✓ Correct! " : "✗ Not quite. "}{data.explanation}
+          </p>
+          <button onClick={onNext} style={{
+            marginTop: 12, padding: "8px 18px",
+            background: "var(--teal)", color: "white", border: "none",
+            borderRadius: 8, cursor: "pointer", fontSize: 13, fontFamily: "inherit",
+            fontWeight: 600,
+          }}>
+            Next question →
+          </button>
+        </>
+      )}
+    </div>
+  );
+}
+
+// ── Message ──────────────────────────────────────────────────────────────────
+function Message({ msg, onNextQuiz }) {
+  if (msg.role === "user") {
+    return (
+      <div className="msg-row user">
+        <div className="avatar avatar-user">YOU</div>
+        <div className="bubble bubble-user">{msg.content}</div>
+      </div>
+    );
+  }
+  if (msg.isQuiz) {
+    return (
+      <div className="msg-row">
+        <div className="avatar avatar-ai">🤖</div>
+        <QuizBubble data={msg} onNext={onNextQuiz} />
+      </div>
+    );
+  }
+  return (
+    <div className="msg-row">
+      <div className="avatar avatar-ai">🤖</div>
+      <div className="bubble bubble-ai">
+        {renderContent(msg.content)}
+        <SourceCards sources={msg.sources} />
+      </div>
+    </div>
+  );
+}
+
+// ── WelcomeCard ───────────────────────────────────────────────────────────────
+function WelcomeCard({ mode, onStarter }) {
+  return (
+    <div className="welcome-card">
+      <h2>{mode.icon} {mode.label}</h2>
+      <div className="demo-note">
+        📋 <strong>Demo version</strong> — this build uses pre-loaded responses for sample questions.
+        For full AI-powered Q&amp;A, visit <strong>strategpt.onrender.com</strong>.
+      </div>
+      <p>
+        {mode.id === "history" && "Ask any question about U.S. Program strategies from 2019 to present. In this demo, try the sample questions below for detailed answers."}
+        {mode.id === "ambition" && "Explore how Ambition 2045 connects to — and departs from — the historical arc of U.S. Program strategy."}
+        {mode.id === "quiz" && "Test your knowledge of U.S. Program strategy. Click any button below to start — this demo includes 6 multiple-choice questions."}
+      </p>
+      <p style={{ fontSize: 12, color: "var(--gray-400)", marginTop: 8 }}>Try a sample question to get started:</p>
+      <div className="starter-grid">
+        {mode.starters.map((s, i) => (
+          <button key={i} className="starter-btn" onClick={() => onStarter(s)}>"{s}"</button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ── App ───────────────────────────────────────────────────────────────────────
+function App() {
+  const [modeId, setModeId] = useState("history");
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [histories, setHistories] = useState({ history: [], ambition: [], quiz: [] });
+  const [input, setInput] = useState("");
+  const [typing, setTyping] = useState(false);
+  const messagesEndRef = useRef(null);
+  const textareaRef = useRef(null);
+
+  const mode = MODES.find((m) => m.id === modeId);
+  const messages = histories[modeId];
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [histories, typing]);
+
+  function autoResize() {
+    const ta = textareaRef.current;
+    if (!ta) return;
+    ta.style.height = "auto";
+    ta.style.height = Math.min(ta.scrollHeight, 140) + "px";
+  }
+
+  function switchMode(id) {
+    setModeId(id);
+    setInput("");
+    if (textareaRef.current) textareaRef.current.style.height = "auto";
+  }
+
+  async function sendMessage(text) {
+    const msg = text || input.trim();
+    if (!msg) return;
+    setInput("");
+    if (textareaRef.current) textareaRef.current.style.height = "auto";
+
+    const userMsg = { role: "user", content: msg };
+    setHistories((h) => ({ ...h, [modeId]: [...h[modeId], userMsg] }));
+    setTyping(true);
+
+    // Simulate a short delay for realism
+    await new Promise(r => setTimeout(r, 900 + Math.random() * 600));
+    setTyping(false);
+
+    const aiMsg = getDemoResponse(modeId, msg);
+    setHistories((h) => ({ ...h, [modeId]: [...h[modeId], aiMsg] }));
+  }
+
+  function handleNextQuiz() {
+    const aiMsg = getNextQuiz(modeId);
+    setHistories((h) => ({ ...h, [modeId]: [...h[modeId], aiMsg] }));
+  }
+
+  function handleKeyDown(e) {
+    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+  }
+
+  const tags = [
+    { label: "K-12 Education",   cls: "tag-teal"     },
+    { label: "Postsecondary",    cls: "tag-blue"     },
+    { label: "Pathways",         cls: "tag-green"    },
+    { label: "Data",             cls: "tag-charcoal" },
+    { label: "Charters",         cls: "tag-magenta"  },
+    { label: "Washington State", cls: "tag-purple"   },
+    { label: "Amb'45",           cls: "tag-gold"     },
+  ];
+
+  return (
+    <>
+      <header>
+        <div className="header-left">
+          <div className="logo-mark">🤖</div>
+          <div>
+            <div className="app-title">StrateGPT</div>
+            <div className="app-subtitle">U.S. Program Strategy Assistant</div>
+          </div>
+        </div>
+        <div className="header-right">
+          <span className="demo-badge">DEMO</span>
+          <span className="header-badge">Gates Foundation · Internal</span>
+        </div>
+      </header>
+
+      <div className="disclaimer">
+        ⚠️ Demo version with pre-loaded responses. For full AI-powered Q&amp;A, visit <strong>strategpt.onrender.com</strong>. <strong>Internal use only.</strong>
+      </div>
+
+      <div className="app-body">
+        {!sidebarOpen && (
+          <button className="sidebar-expand" onClick={() => setSidebarOpen(true)} title="Open sidebar">▶</button>
+        )}
+        <aside className={`sidebar${sidebarOpen ? "" : " collapsed"}`}>
+          <div className="sidebar-toggle-row">
+            <button className="sidebar-toggle" onClick={() => setSidebarOpen(o => !o)} title="Collapse sidebar">◀</button>
+          </div>
+          <div className="sidebar-section">
+            <div className="sidebar-label">Mode</div>
+            {MODES.map((m) => (
+              <button key={m.id}
+                className={`mode-btn ${modeId === m.id ? `active active-${m.id}` : ""}`}
+                onClick={() => switchMode(m.id)}>
+                <span className="mode-icon">{m.icon}</span>
+                <span className="mode-text">{m.label}<small>{m.short}</small></span>
+              </button>
+            ))}
+          </div>
+          <hr className="sidebar-divider" />
+          <div className="sidebar-section">
+            <div className="sidebar-label">Knowledge Base</div>
+          </div>
+          <div className="doc-count-pill">
+            <div>
+              <strong>584</strong>
+              <div style={{ fontSize: 11 }}>USP strategy docs · 2019–2026</div>
+            </div>
+          </div>
+          <div style={{ padding: "0 16px 16px" }}>
+            {tags.map((t, i) => (
+              <span key={i} className={`strategy-tag ${t.cls}`}>{t.label}</span>
+            ))}
+          </div>
+        </aside>
+
+        <main className="chat-area">
+          <div className={`mode-banner mode-${modeId}`}>
+            <span className="mode-banner-icon">{mode.icon}</span>
+            <div>
+              <div className="mode-banner-title">{mode.label}</div>
+              <div className="mode-banner-desc">{mode.banner}</div>
+            </div>
+          </div>
+
+          <div className="messages">
+            {messages.length === 0 && <WelcomeCard mode={mode} onStarter={sendMessage} />}
+            {messages.map((msg, i) => (
+              <Message key={i} msg={msg} onNextQuiz={handleNextQuiz} />
+            ))}
+            {typing && <TypingIndicator />}
+            <div ref={messagesEndRef} />
+          </div>
+
+          <div className="input-bar">
+            <div className="input-wrapper">
+              <textarea
+                ref={textareaRef}
+                value={input}
+                onChange={(e) => { setInput(e.target.value); autoResize(); }}
+                onKeyDown={handleKeyDown}
+                placeholder={mode.placeholder}
+                rows={1}
+              />
+              <button className="send-btn" onClick={() => sendMessage()} disabled={!input.trim() || typing}>↑</button>
+            </div>
+          </div>
+          <div className="input-hint">Shift + Enter for new line · Enter to send</div>
+        </main>
+      </div>
+    </>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+</script>
+</body>
+</html>

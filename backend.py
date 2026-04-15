@@ -221,3 +221,7 @@ def health():
 @app.get("/")
 def serve_ui():
     return FileResponse(os.path.join(BASE, "index.html"))
+
+@app.get("/demo")
+def serve_demo():
+    return FileResponse(os.path.join(BASE, "strategpt_demo.html"))
