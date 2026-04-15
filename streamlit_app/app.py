@@ -33,8 +33,7 @@ st.markdown("""
   section[data-testid="stSidebar"] { background-color: #1D2530 !important; }
   section[data-testid="stSidebar"] p,
   section[data-testid="stSidebar"] span,
-  section[data-testid="stSidebar"] label,
-  section[data-testid="stSidebar"] .stRadio label { color: #ffffff !important; }
+  section[data-testid="stSidebar"] label { color: #ffffff !important; }
   section[data-testid="stSidebar"] .stMarkdown h1,
   section[data-testid="stSidebar"] .stMarkdown h2,
   section[data-testid="stSidebar"] .stMarkdown h3 { color: #EBCB00 !important; }
@@ -79,25 +78,6 @@ with st.sidebar:
     st.markdown("*Gates Foundation · Internal*")
     st.divider()
 
-    mode = st.radio(
-        "Mode",
-        options=["Strategy History", "Ambition 2045", "Quiz Me"],
-        key="mode_radio",
-    )
-
-    MODE_ICONS = {
-        "Strategy History": "📚",
-        "Ambition 2045":    "🔭",
-        "Quiz Me":          "🧠",
-    }
-    st.caption({
-        "Strategy History": "Explore how USP strategies evolved from 2019 to present.",
-        "Ambition 2045":    "Connect Amb'45 priorities to historical USP strategy.",
-        "Quiz Me":          "Test your knowledge of USP strategy concepts.",
-    }[mode])
-
-    st.divider()
-
     st.markdown("**Knowledge Base**")
     st.markdown(f"📚 **{len(INDEX)}** strategy documents")
     st.markdown(f"📝 **{len(DOC_TEXTS)}** with extracted text")
@@ -105,14 +85,16 @@ with st.sidebar:
 
     st.divider()
 
-    session_key = {
-        "Strategy History": "history_msgs",
-        "Ambition 2045":    "amb45_msgs",
-        "Quiz Me":          "quiz_msgs",
-    }[mode]
-
-    if st.button("🗑 Clear conversation", width="stretch"):
-        st.session_state[session_key] = []
+    st.markdown("**Clear conversations**")
+    col1, col2, col3 = st.columns(3)
+    if col1.button("📚", help="Clear Strategy History", width="stretch"):
+        st.session_state["history_msgs"] = []
+        st.rerun()
+    if col2.button("🔭", help="Clear Ambition 2045", width="stretch"):
+        st.session_state["amb45_msgs"] = []
+        st.rerun()
+    if col3.button("🧠", help="Clear Quiz Me", width="stretch"):
+        st.session_state["quiz_msgs"] = []
         st.rerun()
 
 # ── Main content ──────────────────────────────────────────────────────────────
@@ -122,9 +104,6 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-icon = {"Strategy History": "📚", "Ambition 2045": "🔭", "Quiz Me": "🧠"}[mode]
-st.markdown(f"### {icon} {mode}")
-
 tab_chat, tab_explorer, tab_synthesis = st.tabs([
     "💬 Chat",
     "📁 Document Explorer",
@@ -132,7 +111,17 @@ tab_chat, tab_explorer, tab_synthesis = st.tabs([
 ])
 
 with tab_chat:
-    render_chat(mode, session_key, INDEX, DOC_TEXTS, SKILLS, client)
+    mode_history, mode_amb45, mode_quiz = st.tabs([
+        "📚 Strategy History",
+        "🔭 Ambition 2045",
+        "🧠 Quiz Me",
+    ])
+    with mode_history:
+        render_chat("Strategy History", "history_msgs", INDEX, DOC_TEXTS, SKILLS, client)
+    with mode_amb45:
+        render_chat("Ambition 2045", "amb45_msgs", INDEX, DOC_TEXTS, SKILLS, client)
+    with mode_quiz:
+        render_chat("Quiz Me", "quiz_msgs", INDEX, DOC_TEXTS, SKILLS, client)
 
 with tab_explorer:
     render_explorer(INDEX, DOC_TEXTS)
