@@ -20,7 +20,7 @@ from ui.synthesis  import render_synthesis
 
 # ── Page config ───────────────────────────────────────────────────────────────
 st.set_page_config(
-    page_title="Strategy, Synthesis, and Insights — US Program",
+    page_title="StrateGPT",
     page_icon="🤖",
     layout="wide",
     initial_sidebar_state="collapsed",
@@ -33,7 +33,7 @@ st.markdown("""
   #MainMenu, footer, header { visibility: hidden; }
   [data-testid="collapsedControl"] { display: none !important; }
   section[data-testid="stSidebar"]  { display: none !important; }
-  .block-container { padding-top: 0 !important; max-width: 100% !important; }
+  .block-container { padding: 0 !important; max-width: 100% !important; }
 
   /* ── Color tokens ── */
   :root {
@@ -60,7 +60,7 @@ st.markdown("""
     height: 52px;
     display: flex; align-items: center; gap: 12px;
     padding: 0 28px;
-    margin: -1rem -1rem 0 -1rem;
+    margin: 0;
   }
   .topnav-dot {
     width: 9px; height: 9px; border-radius: 50%;
@@ -76,8 +76,8 @@ st.markdown("""
   /* ── Nav column (left panel) ── */
   div[data-testid="stColumn"]:first-child > div:first-child {
     background-color: var(--sidebar);
-    border-radius: 10px;
-    min-height: 88vh;
+    border-radius: 0;
+    min-height: 100vh;
     padding: 20px 12px !important;
   }
 
@@ -95,7 +95,8 @@ st.markdown("""
     font-size: 13px !important;
     margin-bottom: 3px !important;
     transition: background 0.15s, color 0.15s;
-    line-height: 1.4 !important;
+    line-height: 1.5 !important;
+    white-space: pre-line !important;
   }
   div[data-testid="stColumn"]:first-child .stButton button:hover {
     background: rgba(255,255,255,0.10) !important;
@@ -206,6 +207,11 @@ st.markdown("""
     font-size: 12px; color: #7A4A00; margin-bottom: 20px;
   }
 
+  /* ── Content column padding ── */
+  div[data-testid="stColumn"]:last-child > div:first-child {
+    padding: 20px 24px !important;
+  }
+
   /* ── Chat messages ── */
   div[data-testid="stChatMessage"] { max-width: 820px; }
 </style>
@@ -237,23 +243,17 @@ nav_col, content_col = st.columns([1, 4], gap="medium")
 
 # ── Navigation panel ──────────────────────────────────────────────────────────
 with nav_col:
-    st.markdown('<p class="nav-brand">🤖 StrateGPT</p>', unsafe_allow_html=True)
-    st.markdown('<p class="nav-sub">Gates Foundation · Internal</p>', unsafe_allow_html=True)
-    st.divider()
-
     NAV_ITEMS = [
-        ("overview",   "🏠", "Overview"),
-        ("chat",       "💬", "StrateGPT Chat"),
-        ("explorer",   "📁", "Document Explorer"),
-        ("synthesis",  "🔀", "Strategy Synthesizer"),
+        ("overview",  "🏠", "StrateGPT",           "Overview"),
+        ("chat",      "💬", "ChatBot",              "Learn about past and present\nUSP strategy, then test\nyour knowledge"),
+        ("explorer",  "📁", "Document Explorer",   "Review key strategy\ndocuments across time"),
+        ("synthesis", "🔀", "Strategy Synthesizer","Understand how strategies\nchange and connect"),
     ]
 
-    st.markdown('<span class="nav-grp">Navigation</span>', unsafe_allow_html=True)
-
-    for key, icon, label in NAV_ITEMS:
+    for key, icon, label, desc in NAV_ITEMS:
         is_active = st.session_state["section"] == key
         if st.button(
-            f"{icon}  {label}",
+            f"{icon}  {label}\n{desc}",
             key=f"nav_{key}",
             type="primary" if is_active else "secondary",
         ):
