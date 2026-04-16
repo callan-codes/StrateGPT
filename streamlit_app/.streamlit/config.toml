@@ -1,0 +1,11 @@
+[theme]
+primaryColor        = "#3AC9B1"   # Gates teal — buttons, sliders, focus rings
+backgroundColor     = "#F5F5F5"   # Light gray page background
+secondaryBackgroundColor = "#FFFFFF"  # White — sidebar, cards
+textColor           = "#2E2E2E"   # Near-black body text
+font                = "sans serif"
+
+[server]
+headless     = true
+enableCORS   = false
+maxUploadSize = 50
