@@ -1,6 +1,5 @@
 """
-overview.py — Strategy Assistant overview / landing page.
-Content can be populated by the user.
+overview.py — StrateGPT overview / landing page.
 """
 import streamlit as st
 
@@ -9,24 +8,13 @@ def render_overview():
     st.markdown("""
     <div class="t-hdr">
       <div class="t-ey">GATES FOUNDATION · U.S. PROGRAM</div>
-      <div class="t-title">Strategy Assistant</div>
-      <div class="t-tag">Navigate, explore, and synthesize U.S. Program strategy across
-      584 documents spanning 2019–2026.</div>
+      <div class="t-title">StrateGPT</div>
+      <div class="t-tag">Deepen your strategy knowledge – understand key concepts,
+      identify shifts over time, and surface connections between workstreams.</div>
     </div>
     """, unsafe_allow_html=True)
 
     st.markdown("---")
-
-    # ── About section ─────────────────────────────────────────────────────────
-    st.markdown("""
-    <div class="card" style="margin-bottom:18px;">
-      <div class="card-ey">ABOUT</div>
-      <div class="card-title">What is StrateGPT?</div>
-      <div class="card-body">
-        <em>Content coming soon — add your overview text here.</em>
-      </div>
-    </div>
-    """, unsafe_allow_html=True)
 
     # ── Tool cards ────────────────────────────────────────────────────────────
     st.markdown('<div class="card-ey" style="margin-bottom:10px;">SENSEMAKING TOOLS</div>',
@@ -38,31 +26,40 @@ def render_overview():
         st.markdown("""
         <div class="tool-card">
           <div class="tool-icon" style="background:#E8F8F4; color:#0B9E80;">💬</div>
-          <div class="tool-name">StrateGPT Chat</div>
-          <div class="tool-desc">Ask questions across Strategy History, Ambition 2045,
-          or test your knowledge in Quiz mode.</div>
+          <div class="tool-name">ChatBot</div>
+          <div class="tool-desc">Learn about past and present USP strategy,
+          then test your knowledge in Quiz mode.</div>
         </div>
         """, unsafe_allow_html=True)
+        if st.button("Open ChatBot →", key="open_chat", use_container_width=True):
+            st.session_state["section"] = "chat"
+            st.rerun()
 
     with col2:
         st.markdown("""
         <div class="tool-card">
           <div class="tool-icon" style="background:#DFF0FF; color:#1A6BC4;">📁</div>
           <div class="tool-name">Document Explorer</div>
-          <div class="tool-desc">Browse, filter, and search all 584 indexed strategy
-          documents by area, year, and type.</div>
+          <div class="tool-desc">Review key strategy documents across time —
+          filter by area, year, and document type.</div>
         </div>
         """, unsafe_allow_html=True)
+        if st.button("Open Document Explorer →", key="open_explorer", use_container_width=True):
+            st.session_state["section"] = "explorer"
+            st.rerun()
 
     with col3:
         st.markdown("""
         <div class="tool-card">
           <div class="tool-icon" style="background:#EEECFF; color:#5E52D4;">🔀</div>
           <div class="tool-name">Strategy Synthesizer</div>
-          <div class="tool-desc">Ask cross-cutting questions across multiple strategy
-          areas and surface shared themes and tensions.</div>
+          <div class="tool-desc">Understand how strategies change and connect —
+          ask cross-cutting questions across multiple workstreams.</div>
         </div>
         """, unsafe_allow_html=True)
+        if st.button("Open Strategy Synthesizer →", key="open_synthesis", use_container_width=True):
+            st.session_state["section"] = "synthesis"
+            st.rerun()
 
     st.markdown("---")
 

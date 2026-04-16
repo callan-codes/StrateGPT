@@ -15,16 +15,79 @@ def _build_dataframe(index: list, doc_texts: dict) -> pd.DataFrame:
         if d["doc_type"] in SKIP_TYPES:
             continue
         rows.append({
-            "Topic":          d["meeting_topic"] or d["filename"],
+            "Document":       d["meeting_topic"] or d["filename"],
             "Year":           d["session_year"] or 0,
             "Type":           d["doc_type"] or "unknown",
             "Strategy Areas": ", ".join(d["strategy_areas"]),
-            "Has Text":       "✓" if d["filename"] in doc_texts else "",
             "Amb'45":         "✓" if d["is_amb45"] else "",
             "_filename":      d["filename"],
-            "_path":          d["path"],
+            "_url":           to_url(d["path"]),
         })
     return pd.DataFrame(rows)
+
+
+def _render_table(filtered: pd.DataFrame):
+    """Render filtered documents as an HTML table with clickable document names."""
+    rows_html = []
+    for _, row in filtered.iterrows():
+        url  = row["_url"]
+        name = row["Document"]
+        year = int(row["Year"]) if row["Year"] else "—"
+        doc_type = row["Type"]
+        areas = row["Strategy Areas"]
+        amb   = row["Amb'45"]
+
+        if url.startswith("file"):
+            doc_cell = f'<td class="ex-doc">{name}</td>'
+        else:
+            doc_cell = f'<td class="ex-doc"><a href="{url}" target="_blank">{name}</a></td>'
+
+        rows_html.append(
+            f"<tr>"
+            f"{doc_cell}"
+            f'<td class="ex-sm">{year}</td>'
+            f'<td class="ex-sm">{doc_type}</td>'
+            f'<td class="ex-areas">{areas}</td>'
+            f'<td class="ex-sm" style="text-align:center;">{amb}</td>'
+            f"</tr>"
+        )
+
+    table = f"""
+    <style>
+      .ex-wrap {{ overflow-y: auto; max-height: 480px; border: 1px solid var(--border);
+                  border-radius: 8px; margin-top: 12px; }}
+      .ex-tbl {{ width: 100%; border-collapse: collapse; font-size: 13px; }}
+      .ex-tbl thead th {{ background: var(--surf); color: var(--muted); font-size: 11px;
+                          letter-spacing: 0.8px; text-transform: uppercase; font-weight: 700;
+                          padding: 10px 12px; position: sticky; top: 0; z-index: 1;
+                          border-bottom: 1px solid var(--border); text-align: left; }}
+      .ex-tbl tbody tr {{ border-bottom: 1px solid var(--border); }}
+      .ex-tbl tbody tr:hover {{ background: var(--surf); }}
+      .ex-tbl td {{ padding: 9px 12px; color: var(--text); vertical-align: top; }}
+      .ex-doc {{ max-width: 360px; word-break: break-word; }}
+      .ex-doc a {{ color: var(--blue); text-decoration: none; }}
+      .ex-doc a:hover {{ text-decoration: underline; }}
+      .ex-sm {{ white-space: nowrap; color: var(--muted); }}
+      .ex-areas {{ font-size: 12px; color: var(--muted); max-width: 220px; }}
+    </style>
+    <div class="ex-wrap">
+      <table class="ex-tbl">
+        <thead>
+          <tr>
+            <th>Document</th>
+            <th>Year</th>
+            <th>Type</th>
+            <th>Strategy Areas</th>
+            <th>Amb'45</th>
+          </tr>
+        </thead>
+        <tbody>
+          {''.join(rows_html)}
+        </tbody>
+      </table>
+    </div>
+    """
+    st.markdown(table, unsafe_allow_html=True)
 
 
 def render_explorer(index: list, doc_texts: dict):
@@ -32,7 +95,7 @@ def render_explorer(index: list, doc_texts: dict):
 
     st.caption(
         "Browse all 584 indexed strategy documents. Filter by area, year, or type. "
-        "Click any row to open the document in SharePoint."
+        "Click any document name to open it in SharePoint."
     )
 
     df = _build_dataframe(index, doc_texts)
@@ -78,40 +141,27 @@ def render_explorer(index: list, doc_texts: dict):
             (filtered["Year"] >= year_range[0]) & (filtered["Year"] <= year_range[1])
         ]
     if amb45_only:
-        filtered = filtered[filtered["Amb'45"] == "✓"]
+        amb_col = "Amb'45"
+        filtered = filtered[filtered[amb_col] == "✓"]
     if search:
         q = search.lower()
         filtered = filtered[
-            filtered["Topic"].str.lower().str.contains(q, na=False) |
+            filtered["Document"].str.lower().str.contains(q, na=False) |
             filtered["_filename"].str.lower().str.contains(q, na=False)
         ]
 
     # ── Stats row ─────────────────────────────────────────────────────────────
     amb_col = "Amb'45"
-    c1, c2, c3 = st.columns(3)
-    c1.metric("Showing",        f"{len(filtered)} docs")
-    c2.metric("With full text", f"{(filtered['Has Text'] == '✓').sum()}")
-    c3.metric("Amb'45 docs",    f"{(filtered[amb_col] == '✓').sum()}")
+    c1, c2 = st.columns(2)
+    c1.metric("Showing", f"{len(filtered)} docs")
+    c2.metric("Amb'45 docs", f"{(filtered[amb_col] == '✓').sum()}")
 
     # ── Table ─────────────────────────────────────────────────────────────────
-    display_cols = ["Topic", "Year", "Type", "Strategy Areas", "Has Text", "Amb'45"]
-
-    st.dataframe(
-        filtered[display_cols],
-        width="stretch",
-        hide_index=True,
-        height=460,
-        column_config={
-            "Year":           st.column_config.NumberColumn(format="%d", width="small"),
-            "Type":           st.column_config.TextColumn(width="medium"),
-            "Has Text":       st.column_config.TextColumn(width="small"),
-            "Amb'45":         st.column_config.TextColumn(width="small"),
-            "Strategy Areas": st.column_config.TextColumn(width="large"),
-        },
-    )
+    _render_table(filtered)
 
     # ── Download ──────────────────────────────────────────────────────────────
-    csv = filtered[display_cols].to_csv(index=False).encode("utf-8")
+    csv_cols = ["Document", "Year", "Type", "Strategy Areas", "Amb'45"]
+    csv = filtered[csv_cols].to_csv(index=False).encode("utf-8")
     st.download_button(
         "⬇ Download filtered list as CSV",
         data=csv,

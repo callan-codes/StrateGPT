@@ -81,6 +81,14 @@ st.markdown("""
     padding: 20px 12px !important;
   }
 
+  /* Reset nested columns — don't inherit nav panel styling */
+  div[data-testid="stColumn"] div[data-testid="stColumn"]:first-child > div:first-child {
+    background-color: transparent !important;
+    border-radius: 0 !important;
+    min-height: unset !important;
+    padding: 0 !important;
+  }
+
   /* Nav tile buttons */
   div[data-testid="stColumn"]:first-child .stButton button {
     background: transparent !important;
@@ -169,7 +177,7 @@ st.markdown("""
     background: var(--white); border: 1px solid var(--border);
     border-radius: 12px; padding: 20px 18px; height: 100%;
   }
-  .tool-card:hover { box-shadow: 0 4px 18px rgba(0,0,0,0.08); }
+  .tool-card:hover { box-shadow: none; }
   .tool-icon {
     width: 40px; height: 40px; border-radius: 10px;
     display: flex; align-items: center; justify-content: center;
@@ -232,7 +240,7 @@ for key in ("history_msgs", "amb45_msgs", "quiz_msgs"):
 st.markdown("""
 <div class="topnav">
   <div class="topnav-dot"></div>
-  <span class="topnav-brand">Strategy, Synthesis, and Insights</span>
+  <span class="topnav-brand">StrateGPT</span>
   <span class="topnav-div">·</span>
   <span class="topnav-sub">US Program</span>
 </div>
