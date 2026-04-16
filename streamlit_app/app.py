@@ -78,64 +78,83 @@ st.markdown("""
     background-color: var(--sidebar);
     border-radius: 0;
     min-height: 100vh;
-    padding: 20px 12px !important;
+    padding: 16px 10px !important;
   }
 
-  /* Reset nested columns — don't inherit nav panel styling */
+  /* ── Reset: nested first-child columns must NOT inherit nav styling ── */
   div[data-testid="stColumn"] div[data-testid="stColumn"]:first-child > div:first-child {
     background-color: transparent !important;
     border-radius: 0 !important;
     min-height: unset !important;
     padding: 0 !important;
   }
-
-  /* Nav tile buttons */
-  div[data-testid="stColumn"]:first-child .stButton button {
-    background: transparent !important;
-    color: rgba(255,255,255,0.72) !important;
-    border: none !important;
-    border-left: 3px solid transparent !important;
-    border-radius: 8px !important;
-    text-align: left !important;
-    width: 100% !important;
-    padding: 11px 12px !important;
-    font-family: Georgia, serif !important;
-    font-size: 13px !important;
-    margin-bottom: 3px !important;
-    transition: background 0.15s, color 0.15s;
-    line-height: 1.5 !important;
-    white-space: pre-line !important;
-  }
-  div[data-testid="stColumn"]:first-child .stButton button:hover {
-    background: rgba(255,255,255,0.10) !important;
-    color: #fff !important;
-  }
-  div[data-testid="stColumn"]:first-child .stButton button[kind="primary"] {
-    background: rgba(61,219,176,0.15) !important;
-    border-left-color: var(--teal-br) !important;
-    color: var(--teal-br) !important;
-    font-weight: 600 !important;
+  /* Reset white text inside nested columns (fixes Explorer + Synthesizer) */
+  div[data-testid="stColumn"] div[data-testid="stColumn"] p,
+  div[data-testid="stColumn"] div[data-testid="stColumn"] label {
+    color: var(--text) !important;
   }
 
-  /* Nav labels (group headers) */
-  div[data-testid="stColumn"]:first-child p {
-    color: rgba(255,255,255,0.88) !important;
-  }
-  .nav-brand {
-    font-family: Georgia, serif; font-size: 15px;
-    color: #fff !important; margin-bottom: 2px;
-  }
-  .nav-sub {
-    font-size: 11px; color: rgba(255,255,255,0.45) !important;
+  /* ── Nav tile visuals ── */
+  .nav-tile {
+    display: flex;
+    align-items: flex-start;
+    gap: 11px;
+    padding: 10px 10px;
+    border-radius: 8px;
+    border-left: 3px solid transparent;
+    cursor: pointer;
+    transition: background 0.15s;
     margin-bottom: 0;
   }
-  .nav-grp {
-    font-size: 9px; letter-spacing: 2px; text-transform: uppercase;
-    color: rgba(255,255,255,0.4) !important; font-weight: 700;
-    padding: 14px 2px 6px; display: block;
+  .nav-tile:hover { background: rgba(255,255,255,0.08); }
+  .nav-tile-active {
+    background: rgba(61,219,176,0.12);
+    border-left-color: var(--teal-br);
   }
-  div[data-testid="stColumn"]:first-child hr {
-    border-color: rgba(255,255,255,0.12);
+  .nav-tile-icon {
+    width: 34px; height: 34px;
+    border-radius: 7px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; flex-shrink: 0; margin-top: 1px;
+  }
+  .nav-tile-body { flex: 1; min-width: 0; }
+  .nav-tile-label {
+    font-family: Georgia, serif;
+    font-size: 13px;
+    color: #fff;
+    line-height: 1.2;
+    font-weight: 600;
+    margin-bottom: 3px;
+  }
+  .nav-tile-active .nav-tile-label { color: var(--teal-br); }
+  .nav-tile-desc {
+    font-size: 11px;
+    color: rgba(255,255,255,0.5);
+    line-height: 1.35;
+  }
+
+  /* ── Transparent click overlay for nav tiles ── */
+  /* Each tile lives in an st.container() = stVerticalBlock                */
+  /* The st.button is absolutely positioned over it, opacity 0             */
+  div[data-testid="stVerticalBlock"]:has(.nav-tile) {
+    position: relative;
+    margin-bottom: 4px !important;
+  }
+  div[data-testid="stVerticalBlock"]:has(.nav-tile) > div[data-testid="stButton"] {
+    position: absolute !important;
+    inset: 0 !important;
+    z-index: 10 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+  div[data-testid="stVerticalBlock"]:has(.nav-tile) > div[data-testid="stButton"] button {
+    width: 100% !important;
+    height: 100% !important;
+    opacity: 0 !important;
+    cursor: pointer !important;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
   }
 
   /* ── Tool header ── */
@@ -175,7 +194,7 @@ st.markdown("""
   /* ── Tool cards (overview) ── */
   .tool-card {
     background: var(--white); border: 1px solid var(--border);
-    border-radius: 12px; padding: 20px 18px; height: 100%;
+    border-radius: 12px; padding: 20px 18px 14px;
   }
   .tool-card:hover { box-shadow: none; }
   .tool-icon {
@@ -188,6 +207,38 @@ st.markdown("""
     color: var(--navy); margin-bottom: 6px;
   }
   .tool-desc { font-size: 13px; color: var(--muted); line-height: 1.5; }
+
+  /* ── Overview open-tool buttons: small + color-matched ── */
+  div[data-testid="stVerticalBlock"]:has(.tc-teal) .stButton button {
+    background: #E8F8F4 !important; color: #0B7A62 !important;
+    border: 1px solid #aee8d4 !important;
+    font-size: 12px !important; padding: 5px 14px !important;
+    width: auto !important; border-radius: 6px !important;
+    margin-top: 6px !important; box-shadow: none !important;
+  }
+  div[data-testid="stVerticalBlock"]:has(.tc-teal) .stButton button:hover {
+    background: #d0f2e8 !important;
+  }
+  div[data-testid="stVerticalBlock"]:has(.tc-blue) .stButton button {
+    background: #DFF0FF !important; color: #1255A0 !important;
+    border: 1px solid #a8d4f7 !important;
+    font-size: 12px !important; padding: 5px 14px !important;
+    width: auto !important; border-radius: 6px !important;
+    margin-top: 6px !important; box-shadow: none !important;
+  }
+  div[data-testid="stVerticalBlock"]:has(.tc-blue) .stButton button:hover {
+    background: #c5e4ff !important;
+  }
+  div[data-testid="stVerticalBlock"]:has(.tc-purple) .stButton button {
+    background: #EEECFF !important; color: #3D2EA0 !important;
+    border: 1px solid #cbc8f7 !important;
+    font-size: 12px !important; padding: 5px 14px !important;
+    width: auto !important; border-radius: 6px !important;
+    margin-top: 6px !important; box-shadow: none !important;
+  }
+  div[data-testid="stVerticalBlock"]:has(.tc-purple) .stButton button:hover {
+    background: #dddaff !important;
+  }
 
   /* ── Chips ── */
   .chip {
@@ -250,23 +301,36 @@ st.markdown("""
 nav_col, content_col = st.columns([1, 4], gap="medium")
 
 # ── Navigation panel ──────────────────────────────────────────────────────────
-with nav_col:
-    NAV_ITEMS = [
-        ("overview",  "🏠", "StrateGPT",           "Overview"),
-        ("chat",      "💬", "ChatBot",              "Learn about past and present\nUSP strategy, then test\nyour knowledge"),
-        ("explorer",  "📁", "Document Explorer",   "Review key strategy\ndocuments across time"),
-        ("synthesis", "🔀", "Strategy Synthesizer","Understand how strategies\nchange and connect"),
-    ]
+# Each nav item = HTML tile (visual) + transparent st.button (click target).
+# CSS positions the button as an absolute overlay over the tile via :has().
+NAV_ITEMS = [
+    ("overview",  "🏠", "StrateGPT",           "Overview",
+     "#E8EFF8", "#0A2240"),
+    ("chat",      "💬", "ChatBot",              "Learn about past and present USP strategy, then test your knowledge",
+     "#E8F8F4", "#0B9E80"),
+    ("explorer",  "📁", "Document Explorer",   "Review key strategy documents across time",
+     "#DFF0FF", "#1A6BC4"),
+    ("synthesis", "🔀", "Strategy Synthesizer","Understand how strategies change and connect",
+     "#EEECFF", "#5E52D4"),
+]
 
-    for key, icon, label, desc in NAV_ITEMS:
-        is_active = st.session_state["section"] == key
-        if st.button(
-            f"{icon}  {label}\n{desc}",
-            key=f"nav_{key}",
-            type="primary" if is_active else "secondary",
-        ):
-            st.session_state["section"] = key
-            st.rerun()
+with nav_col:
+    for nav_key, icon, label, desc, icon_bg, icon_fg in NAV_ITEMS:
+        is_active = st.session_state["section"] == nav_key
+        active_cls = "nav-tile-active" if is_active else ""
+        with st.container():
+            st.markdown(f"""
+            <div class="nav-tile {active_cls}">
+              <div class="nav-tile-icon" style="background:{icon_bg}; color:{icon_fg};">{icon}</div>
+              <div class="nav-tile-body">
+                <div class="nav-tile-label">{label}</div>
+                <div class="nav-tile-desc">{desc}</div>
+              </div>
+            </div>
+            """, unsafe_allow_html=True)
+            if st.button("select", key=f"nav_{nav_key}"):
+                st.session_state["section"] = nav_key
+                st.rerun()
 
 # ── Content area ──────────────────────────────────────────────────────────────
 with content_col:
@@ -285,9 +349,9 @@ with content_col:
         st.markdown(
             '<div class="t-hdr">'
             '<div class="t-ey">SENSEMAKING TOOLS</div>'
-            '<div class="t-title">StrateGPT Chat</div>'
-            '<div class="t-tag">Ask questions across strategy history, Ambition 2045, '
-            'or test your knowledge in Quiz mode.</div>'
+            '<div class="t-title">ChatBot</div>'
+            '<div class="t-tag">Learn about past and present USP strategy, '
+            'then test your knowledge in Quiz mode.</div>'
             '</div>',
             unsafe_allow_html=True,
         )
