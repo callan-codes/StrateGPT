@@ -6,3 +6,4 @@ python-dotenv
 aiofiles
 streamlit>=1.31.0
 pandas
+python-pptx

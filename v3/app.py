@@ -25,6 +25,21 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
+if not st.session_state.get("authenticated"):
+    st.title("StrateGPT")
+    password = st.text_input("Enter password to continue", type="password")
+    if st.button("Login"):
+        try:
+            correct = st.secrets["password"]
+        except (KeyError, FileNotFoundError):
+            correct = os.environ.get("APP_PASSWORD", "")
+        if password == correct and correct:
+            st.session_state["authenticated"] = True
+            st.rerun()
+        else:
+            st.error("Incorrect password.")
+    st.stop()
+
 for key in ("history_msgs", "amb45_msgs", "quiz_msgs"):
     if key not in st.session_state:
         st.session_state[key] = []
